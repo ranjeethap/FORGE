@@ -172,23 +172,31 @@ export default function PricingPage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
   const getPrice = (price: number | null) => {
-    if (price === null) return 'Custom';
-    if (price === 0) return 'Free';
+    if (price === null) return (
+      <div className="flex items-baseline justify-center gap-1">
+        <span className="text-3xl font-bold">Custom</span>
+      </div>
+    );
+    if (price === 0) return (
+      <div className="flex items-baseline justify-center gap-1">
+        <span className="text-3xl font-bold">Free</span>
+      </div>
+    );
     
     if (billingCycle === 'yearly') {
       const yearlyPrice = Math.floor(price * 0.8);
       return (
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex items-baseline justify-center gap-2">
           <span className="text-lg line-through text-slate-400">${price}</span>
-          <span className="text-3xl font-bold">${yearlyPrice}</span>
+          <span className="text-4xl font-extrabold tracking-tight">${yearlyPrice}</span>
           <span className="text-sm text-slate-500">/mo</span>
         </div>
       );
     }
     
     return (
-      <div className="flex items-center justify-center gap-1">
-        <span className="text-3xl font-bold">${price}</span>
+      <div className="flex items-baseline justify-center gap-1">
+        <span className="text-4xl font-extrabold tracking-tight">${price}</span>
         <span className="text-sm text-slate-500">/mo</span>
       </div>
     );
@@ -218,8 +226,8 @@ export default function PricingPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 py-12">
       <div className="container max-w-7xl mx-auto px-4">
         {/* Header */}
-        <div className="mb-16">
-          <div className="flex items-center justify-between mb-8">
+        <div className="mb-14">
+          <div className="flex items-center justify-between mb-6">
             <a
               href="/dashboard"
               className="flex items-center gap-2 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 transition-colors"
@@ -227,13 +235,13 @@ export default function PricingPage() {
               <ArrowLeft className="h-4 w-4" />
               Back to Dashboard
             </a>
-            <h1 className="text-4xl md:text-6xl font-bold text-slate-900 dark:text-slate-100">
+            <h1 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-slate-100">
               Choose Your Plan
             </h1>
-            <div className="w-24" /> {/* Spacer for centering */}
+            <div className="w-24" />
           </div>
 
-          <p className="text-xl text-slate-600 dark:text-slate-400 mb-8 text-center max-w-3xl mx-auto">
+          <p className="text-lg text-slate-600 dark:text-slate-400 mb-6 text-center max-w-3xl mx-auto">
             Start for free, then scale as you grow. All plans include our core collaborative features.
           </p>
 
@@ -244,12 +252,12 @@ export default function PricingPage() {
             </span>
             <button
               onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 ${
+              className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 ${
                 billingCycle === 'yearly' ? 'bg-orange-500' : 'bg-slate-300 dark:bg-slate-600'
               }`}
             >
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
+                className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ${
                   billingCycle === 'yearly' ? 'translate-x-6' : 'translate-x-1'
                 }`}
               />
@@ -266,21 +274,21 @@ export default function PricingPage() {
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-16 items-stretch">
           {pricingTiers.map((tier) => {
             const IconComponent = tier.icon;
             
             return (
               <Card 
                 key={tier.tier} 
-                className={`relative flex flex-col ${
+                className={`relative h-full flex flex-col overflow-hidden ${
                   tier.popular 
-                    ? 'border-orange-500 shadow-lg scale-105 z-10' 
+                    ? 'border-orange-500 shadow-lg scale-[1.02] z-10' 
                     : 'border-slate-200 dark:border-slate-700'
                 } transition-all duration-200 hover:shadow-lg`}
               >
                 {tier.popular && (
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                     <Badge className="bg-orange-500 text-white shadow-sm">
                       <Star className="h-3 w-3 mr-1" />
                       Most Popular
@@ -288,20 +296,18 @@ export default function PricingPage() {
                   </div>
                 )}
 
-                <CardHeader className="flex-grow-0">
-                  <div className="flex items-center gap-2 mb-4">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center gap-2 mb-2">
                     <div className={`p-2 rounded-lg ${tier.popular ? 'bg-orange-100' : 'bg-slate-100 dark:bg-slate-800'}`}>
                       <IconComponent className={`h-6 w-6 ${tier.popular ? 'text-orange-500' : 'text-slate-600 dark:text-slate-400'}`} />
                     </div>
                     <CardTitle className="text-xl">{tier.name}</CardTitle>
                   </div>
-                  <div className="mb-3">
-                    {getPrice(tier.price)}
-                  </div>
-                  <CardDescription className="min-h-[48px]">{tier.description}</CardDescription>
+                  <div className="mb-2">{getPrice(tier.price)}</div>
+                  <CardDescription className="min-h-[48px] text-center">{tier.description}</CardDescription>
                 </CardHeader>
 
-                <CardContent className="space-y-6 flex-grow">
+                <CardContent className="space-y-6 flex-1 pt-2">
                   {/* Included Features */}
                   <div>
                     <h4 className="font-medium text-sm text-slate-900 dark:text-slate-100 mb-3">
@@ -320,9 +326,7 @@ export default function PricingPage() {
                   {/* Limits */}
                   {tier.features.limits.length > 0 && (
                     <div>
-                      <h4 className="font-medium text-sm text-slate-900 dark:text-slate-100 mb-3">
-                        Limits:
-                      </h4>
+                      <h4 className="font-medium text-sm text-slate-900 dark:text-slate-100 mb-3">Limits:</h4>
                       <ul className="space-y-3">
                         {tier.features.limits.map((limit, index) => (
                           <li key={index} className="flex items-start gap-3 text-sm">
@@ -335,7 +339,7 @@ export default function PricingPage() {
                   )}
                 </CardContent>
 
-                <CardFooter className="pt-6">
+                <CardFooter className="pt-4 mt-auto bg-slate-50/50 dark:bg-slate-900/20 border-t border-slate-100 dark:border-slate-800">
                   <div className="flex flex-col gap-3 w-full">
                     <Button 
                       className={`w-full py-6 text-base font-medium ${
@@ -348,13 +352,17 @@ export default function PricingPage() {
                       {tier.cta}
                     </Button>
                     {['INDIVIDUAL','STARTUP','BUSINESS'].includes(tier.tier) && (
-                      <Button variant="outline" className="w-full py-6" onClick={() => {
-                        const email = localStorage.getItem('userEmail') || '';
-                        const firstName = localStorage.getItem('userFirstName') || '';
-                        const lastName = localStorage.getItem('userLastName') || '';
-                        const qs = new URLSearchParams({ plan: tier.tier, email, firstName, lastName, billingCycle, trial: '1' });
-                        window.location.href = `/checkout?${qs.toString()}`;
-                      }}>
+                      <Button 
+                        variant="outline" 
+                        className="w-full py-6 border-slate-300 dark:border-slate-700"
+                        onClick={() => {
+                          const email = localStorage.getItem('userEmail') || '';
+                          const firstName = localStorage.getItem('userFirstName') || '';
+                          const lastName = localStorage.getItem('userLastName') || '';
+                          const qs = new URLSearchParams({ plan: tier.tier, email, firstName, lastName, billingCycle, trial: '1' });
+                          window.location.href = `/checkout?${qs.toString()}`;
+                        }}
+                      >
                         Start 14-day Free Trial
                       </Button>
                     )}
