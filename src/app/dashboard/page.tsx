@@ -37,11 +37,7 @@ export default function DashboardPage() {
         const trial = urlParams.get('trial') === '1' || localStorage.getItem('userTrial') === '1' || undefined;
 
         if (!userEmail) {
-          if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            userEmail = 'ranjeeth_ap@outlook.com';
-          } else {
-            userEmail = 'demo@example.com';
-          }
+          userEmail = 'demo@example.com';
         }
 
         const qs = new URLSearchParams({ email: userEmail });

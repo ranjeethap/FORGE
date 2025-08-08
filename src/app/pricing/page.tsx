@@ -222,19 +222,28 @@ export default function PricingPage() {
     window.location.href = `/checkout?${qs.toString()}`;
   };
 
+  const handleBack = () => {
+    const email = localStorage.getItem('userEmail');
+    if (email) {
+      window.location.href = '/dashboard';
+    } else {
+      window.location.href = '/';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 py-12">
       <div className="container max-w-7xl mx-auto px-4">
         {/* Header */}
         <div className="mb-14">
           <div className="flex items-center justify-between mb-6">
-            <a
-              href="/dashboard"
+            <button
+              onClick={handleBack}
               className="flex items-center gap-2 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
               Back to Dashboard
-            </a>
+            </button>
             <h1 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-slate-100">
               Choose Your Plan
             </h1>
