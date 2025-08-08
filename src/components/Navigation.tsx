@@ -49,13 +49,21 @@ export function SubscriptionBadge() {
     const fetchUserProfile = async () => {
       try {
         const userEmail = localStorage.getItem('userEmail') || 'demo@example.com';
-        const response = await fetch(`/api/users/profile?email=${userEmail}`);
+        const planOverride = localStorage.getItem('userPlan') || undefined;
+        const qs = new URLSearchParams({ email: userEmail });
+        if (planOverride) qs.set('plan', planOverride);
+        const response = await fetch(`/api/users/profile?${qs.toString()}`);
         if (response.ok) {
           const userData = await response.json();
           setTier(userData.subscriptionTier || 'FREE');
+        } else {
+          // fallback to local storage plan if API fails
+          setTier(planOverride || 'FREE');
         }
       } catch (error) {
         console.error('Error fetching user profile:', error);
+        const planOverride = localStorage.getItem('userPlan');
+        if (planOverride) setTier(planOverride);
       } finally {
         setLoading(false);
       }

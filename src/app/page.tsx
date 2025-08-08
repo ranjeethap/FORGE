@@ -90,6 +90,12 @@ export default function HomePage() {
                 >
                   Sign In
                 </Link>
+                <Link 
+                  href="/pricing"
+                  className="border border-white/70 text-white/90 px-8 py-3 rounded-lg font-semibold hover:bg-white/10 transition-colors inline-block text-center"
+                >
+                  View Pricing
+                </Link>
               </>
             )}
           </div>

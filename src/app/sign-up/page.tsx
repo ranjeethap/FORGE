@@ -15,13 +15,22 @@ export default function SignUpPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Store the user email and selected plan in localStorage
+    // Store the user email, selected plan, and names in localStorage
     if (formData.email) {
       localStorage.setItem('userEmail', formData.email);
       localStorage.setItem('userPlan', formData.selectedPlan);
+      localStorage.setItem('userFirstName', formData.firstName);
+      localStorage.setItem('userLastName', formData.lastName);
     }
-    // Redirect to dashboard with the email as a parameter
-    window.location.href = `/dashboard?email=${encodeURIComponent(formData.email)}&plan=${encodeURIComponent(formData.selectedPlan)}`;
+
+    // If user chose a paid plan, send them to pricing/checkout first
+    if (formData.selectedPlan && formData.selectedPlan !== 'FREE') {
+      window.location.href = `/checkout?plan=${encodeURIComponent(formData.selectedPlan)}&email=${encodeURIComponent(formData.email)}&firstName=${encodeURIComponent(formData.firstName)}&lastName=${encodeURIComponent(formData.lastName)}&source=signup`;
+      return;
+    }
+
+    // For free plan, go straight to dashboard with context
+    window.location.href = `/dashboard?email=${encodeURIComponent(formData.email)}&plan=${encodeURIComponent(formData.selectedPlan)}&firstName=${encodeURIComponent(formData.firstName)}&lastName=${encodeURIComponent(formData.lastName)}`;
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -156,9 +165,9 @@ export default function SignUpPage() {
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 >
                   <option value="FREE">Free Plan - $0/month</option>
-                  <option value="INDIVIDUAL">Individual - $9/month</option>
-                  <option value="STARTUP">Startup - $29/month</option>
-                  <option value="BUSINESS">Business - $99/month</option>
+                  <option value="INDIVIDUAL">Individual - $29/month</option>
+                  <option value="STARTUP">Startup - $79/month</option>
+                  <option value="BUSINESS">Business - $199/month</option>
                   <option value="ENTERPRISE">Enterprise - Contact Sales</option>
                 </select>
               </div>

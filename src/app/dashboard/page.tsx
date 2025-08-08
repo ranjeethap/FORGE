@@ -28,26 +28,33 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        // Try to get user email from multiple sources
         const urlParams = new URLSearchParams(window.location.search);
         let userEmail = urlParams.get('email') || localStorage.getItem('userEmail');
-        
-        // If no email found, try to detect from browser or use default
+        const plan = urlParams.get('plan') || localStorage.getItem('userPlan') || undefined;
+        const firstName = urlParams.get('firstName') || localStorage.getItem('userFirstName') || undefined;
+        const lastName = urlParams.get('lastName') || localStorage.getItem('userLastName') || undefined;
+
         if (!userEmail) {
-          // Check if we're in a development environment and use the known user
           if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
             userEmail = 'ranjeeth_ap@outlook.com';
           } else {
             userEmail = 'demo@example.com';
           }
         }
-        
-        const response = await fetch(`/api/users/profile?email=${userEmail}`);
+
+        const qs = new URLSearchParams({ email: userEmail });
+        if (plan) qs.set('plan', plan);
+        if (firstName) qs.set('firstName', firstName);
+        if (lastName) qs.set('lastName', lastName);
+
+        const response = await fetch(`/api/users/profile?${qs.toString()}`);
         if (response.ok) {
           const profile = await response.json();
           setUserProfile(profile);
-          // Store the email for future use
           localStorage.setItem('userEmail', userEmail);
+          if (plan) localStorage.setItem('userPlan', plan);
+          if (firstName) localStorage.setItem('userFirstName', firstName);
+          if (lastName) localStorage.setItem('userLastName', lastName);
         }
       } catch (error) {
         console.error('Error fetching user profile:', error);
@@ -58,6 +65,12 @@ export default function DashboardPage() {
 
     fetchUserProfile();
   }, []);
+
+  const initialLetter = (() => {
+    const f = userProfile?.firstName?.trim?.();
+    const l = userProfile?.lastName?.trim?.();
+    return (f?.[0] || l?.[0] || (userProfile?.email?.[0] || 'U')).toUpperCase();
+  })();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
@@ -89,7 +102,7 @@ export default function DashboardPage() {
                 >
                   <div className="w-8 h-8 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center">
                     <span className="text-slate-600 dark:text-slate-300 text-sm font-medium">
-                      {userProfile ? (userProfile.firstName?.[0] || userProfile.lastName?.[0] || 'D') : 'D'}
+                      {initialLetter}
                     </span>
                   </div>
                   <ChevronDown className="h-4 w-4" />

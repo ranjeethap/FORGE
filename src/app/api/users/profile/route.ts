@@ -5,6 +5,9 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const email = searchParams.get('email');
+    const overrideTier = searchParams.get('plan');
+    const overrideFirst = searchParams.get('firstName');
+    const overrideLast = searchParams.get('lastName');
 
     if (!email) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
@@ -16,35 +19,35 @@ export async function GET(request: NextRequest) {
         return {
           id: '1',
           clerkId: 'clerk_mock_user_1',
-          email: email,
-          firstName: 'Ranjeeth',
-          lastName: 'AP',
-          role: 'ADMIN', // Only admin user
+          email,
+          firstName: overrideFirst || 'Ranjeeth',
+          lastName: overrideLast || 'AP',
+          role: 'ADMIN',
           bio: 'Full-stack developer with 5+ years of experience in React, Node.js, and cloud technologies. Passionate about building scalable web applications and contributing to open-source projects.',
           location: 'San Francisco, CA',
           timezone: 'America/Los_Angeles',
           hourlyRate: 85,
           isAvailable: true,
-          subscriptionTier: 'ENTERPRISE', // Admin gets enterprise plan
+          subscriptionTier: 'ENTERPRISE',
           subscriptionStatus: 'ACTIVE',
         };
       } else {
-        // Default plan for new users
         const defaultPlan = 'FREE';
-        
+        const finalTier = (overrideTier || defaultPlan).toUpperCase();
+
         return {
           id: '2',
           clerkId: 'clerk_mock_user_2',
-          email: email,
-          firstName: 'Demo',
-          lastName: 'User',
-          role: 'USER', // Regular user
+          email,
+          firstName: overrideFirst || 'Demo',
+          lastName: overrideLast || 'User',
+          role: 'USER',
           bio: 'Full-stack developer with 5+ years of experience in React, Node.js, and cloud technologies. Passionate about building scalable web applications and contributing to open-source projects.',
           location: 'San Francisco, CA',
           timezone: 'America/Los_Angeles',
           hourlyRate: 85,
           isAvailable: true,
-          subscriptionTier: defaultPlan, // Use stored plan or default to free
+          subscriptionTier: finalTier,
           subscriptionStatus: 'ACTIVE',
         };
       }
@@ -90,7 +93,7 @@ export async function GET(request: NextRequest) {
         }
       ],
       createdAt: new Date('2024-01-15'),
-      updatedAt: new Date('2024-02-15')
+      updatedAt: new Date()
     };
 
     return NextResponse.json(mockProfile);

@@ -200,36 +200,12 @@ export default function PricingPage() {
       return;
     }
 
-    try {
-      const response = await fetch('/api/subscriptions/upgrade', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          tier,
-          billingCycle,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to initiate upgrade');
-      }
-
-      const data = await response.json();
-      
-      // Redirect to checkout or confirmation page
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
-      } else {
-        // Redirect to dashboard with success message
-        window.location.href = '/dashboard?upgrade=success';
-      }
-    } catch (error) {
-      console.error('Error upgrading plan:', error);
-      // Show error toast or message
-      alert('Failed to upgrade plan. Please try again later.');
-    }
+    // Always go to checkout in mock flow
+    const params = new URLSearchParams(window.location.search);
+    const email = params.get('email') || localStorage.getItem('userEmail') || '';
+    const firstName = params.get('firstName') || localStorage.getItem('userFirstName') || '';
+    const lastName = params.get('lastName') || localStorage.getItem('userLastName') || '';
+    window.location.href = `/checkout?plan=${encodeURIComponent(tier)}&email=${encodeURIComponent(email)}&firstName=${encodeURIComponent(firstName)}&lastName=${encodeURIComponent(lastName)}`;
   };
 
   return (
@@ -238,13 +214,13 @@ export default function PricingPage() {
         {/* Header */}
         <div className="mb-16">
           <div className="flex items-center justify-between mb-8">
-            <button
-              onClick={() => window.history.back()}
+            <a
+              href="/dashboard"
               className="flex items-center gap-2 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
               Back to Dashboard
-            </button>
+            </a>
             <h1 className="text-4xl md:text-6xl font-bold text-slate-900 dark:text-slate-100">
               Choose Your Plan
             </h1>
