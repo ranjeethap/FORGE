@@ -274,99 +274,90 @@ export default function PricingPage() {
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-16 items-stretch">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-16 items-stretch">
           {pricingTiers.map((tier) => {
             const IconComponent = tier.icon;
             
             return (
               <Card 
                 key={tier.tier} 
-                className={`relative h-full flex flex-col overflow-hidden ${
+                className={`relative h-full flex flex-col overflow-hidden rounded-2xl ${
                   tier.popular 
-                    ? 'border-orange-500 shadow-lg scale-[1.02] z-10' 
+                    ? 'border-orange-400 ring-1 ring-orange-200' 
                     : 'border-slate-200 dark:border-slate-700'
-                } transition-all duration-200 hover:shadow-lg`}
+                } transition-shadow duration-200 hover:shadow-md`}
               >
                 {tier.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <Badge className="bg-orange-500 text-white shadow-sm">
-                      <Star className="h-3 w-3 mr-1" />
-                      Most Popular
-                    </Badge>
+                  <div className="absolute top-3 right-3">
+                    <Badge className="bg-orange-500 text-white shadow-sm">Most Popular</Badge>
                   </div>
                 )}
 
-                <CardHeader className="pb-2">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className={`p-2 rounded-lg ${tier.popular ? 'bg-orange-100' : 'bg-slate-100 dark:bg-slate-800'}`}>
-                      <IconComponent className={`h-6 w-6 ${tier.popular ? 'text-orange-500' : 'text-slate-600 dark:text-slate-400'}`} />
-                    </div>
-                    <CardTitle className="text-xl">{tier.name}</CardTitle>
+                <CardHeader className="pb-2 text-center space-y-3">
+                  <div className={`mx-auto h-10 w-10 rounded-xl flex items-center justify-center ${tier.popular ? 'bg-orange-50' : 'bg-slate-100 dark:bg-slate-800'}`}>
+                    <IconComponent className={`${tier.popular ? 'text-orange-500' : 'text-slate-600 dark:text-slate-400'} h-5 w-5`} />
                   </div>
-                  <div className="mb-2">{getPrice(tier.price)}</div>
-                  <CardDescription className="min-h-[48px] text-center">{tier.description}</CardDescription>
+                  <CardTitle className="text-lg font-semibold tracking-tight">{tier.name}</CardTitle>
+                  <div>{getPrice(tier.price)}</div>
+                  <CardDescription className="text-sm leading-relaxed min-h-[44px]">{tier.description}</CardDescription>
                 </CardHeader>
 
-                <CardContent className="space-y-6 flex-1 pt-2">
-                  {/* Included Features */}
-                  <div>
-                    <h4 className="font-medium text-sm text-slate-900 dark:text-slate-100 mb-3">
-                      What's included:
-                    </h4>
-                    <ul className="space-y-3">
-                      {tier.features.included.map((feature, index) => (
-                        <li key={index} className="flex items-start gap-3 text-sm">
-                          <Check className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                          <span className="text-slate-600 dark:text-slate-400">{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Limits */}
-                  {tier.features.limits.length > 0 && (
+                <CardContent className="flex-1 pt-2">
+                  <div className="space-y-6">
                     <div>
-                      <h4 className="font-medium text-sm text-slate-900 dark:text-slate-100 mb-3">Limits:</h4>
-                      <ul className="space-y-3">
-                        {tier.features.limits.map((limit, index) => (
+                      <h4 className="font-medium text-sm text-slate-900 dark:text-slate-100 mb-3">What's included</h4>
+                      <ul className="space-y-2">
+                        {tier.features.included.map((feature, index) => (
                           <li key={index} className="flex items-start gap-3 text-sm">
-                            <X className="h-4 w-4 text-slate-400 flex-shrink-0 mt-0.5" />
-                            <span className="text-slate-500">{limit}</span>
+                            <Check className="h-4 w-4 text-green-500 mt-0.5" />
+                            <span className="text-slate-600 dark:text-slate-400">{feature}</span>
                           </li>
                         ))}
                       </ul>
                     </div>
-                  )}
-                </CardContent>
 
-                <CardFooter className="pt-4 mt-auto bg-slate-50/50 dark:bg-slate-900/20 border-t border-slate-100 dark:border-slate-800">
-                  <div className="flex flex-col gap-3 w-full">
-                    <Button 
-                      className={`w-full py-6 text-base font-medium ${
-                        tier.popular 
-                          ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-sm' 
-                          : 'bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900'
-                      }`}
-                      onClick={() => handleUpgrade(tier.tier)}
-                    >
-                      {tier.cta}
-                    </Button>
-                    {['INDIVIDUAL','STARTUP','BUSINESS'].includes(tier.tier) && (
-                      <Button 
-                        variant="outline" 
-                        className="w-full py-6 border-slate-300 dark:border-slate-700"
-                        onClick={() => {
-                          const email = localStorage.getItem('userEmail') || '';
-                          const firstName = localStorage.getItem('userFirstName') || '';
-                          const lastName = localStorage.getItem('userLastName') || '';
-                          const qs = new URLSearchParams({ plan: tier.tier, email, firstName, lastName, billingCycle, trial: '1' });
-                          window.location.href = `/checkout?${qs.toString()}`;
-                        }}
-                      >
-                        Start 14-day Free Trial
-                      </Button>
+                    {tier.features.limits.length > 0 && (
+                      <div className="border-t border-slate-100 dark:border-slate-800 pt-5">
+                        <h4 className="font-medium text-sm text-slate-900 dark:text-slate-100 mb-3">Limits</h4>
+                        <ul className="space-y-2">
+                          {tier.features.limits.map((limit, index) => (
+                            <li key={index} className="flex items-start gap-3 text-sm">
+                              <X className="h-4 w-4 text-slate-400 mt-0.5" />
+                              <span className="text-slate-500">{limit}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     )}
                   </div>
+                </CardContent>
+
+                <CardFooter className="gap-3 mt-auto bg-slate-50/50 dark:bg-slate-900/20 border-t border-slate-100 dark:border-slate-800">
+                  <Button 
+                    className={`w-full py-5 text-sm font-medium ${
+                      tier.popular 
+                        ? 'bg-orange-500 hover:bg-orange-600 text-white' 
+                        : 'bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900'
+                    }`}
+                    onClick={() => handleUpgrade(tier.tier)}
+                  >
+                    {tier.cta}
+                  </Button>
+                  {['INDIVIDUAL','STARTUP','BUSINESS'].includes(tier.tier) && (
+                    <Button 
+                      variant="outline" 
+                      className="w-full py-5 text-sm border-slate-300 dark:border-slate-700"
+                      onClick={() => {
+                        const email = localStorage.getItem('userEmail') || '';
+                        const firstName = localStorage.getItem('userFirstName') || '';
+                        const lastName = localStorage.getItem('userLastName') || '';
+                        const qs = new URLSearchParams({ plan: tier.tier, email, firstName, lastName, billingCycle, trial: '1' });
+                        window.location.href = `/checkout?${qs.toString()}`;
+                      }}
+                    >
+                      Start 14-day Free Trial
+                    </Button>
+                  )}
                 </CardFooter>
               </Card>
             );
