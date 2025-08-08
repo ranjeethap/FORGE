@@ -332,32 +332,34 @@ export default function PricingPage() {
                   </div>
                 </CardContent>
 
-                <CardFooter className="gap-3 mt-auto bg-slate-50/50 dark:bg-slate-900/20 border-t border-slate-100 dark:border-slate-800">
-                  <Button 
-                    className={`w-full py-5 text-sm font-medium ${
-                      tier.popular 
-                        ? 'bg-orange-500 hover:bg-orange-600 text-white' 
-                        : 'bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900'
-                    }`}
-                    onClick={() => handleUpgrade(tier.tier)}
-                  >
-                    {tier.cta}
-                  </Button>
-                  {['INDIVIDUAL','STARTUP','BUSINESS'].includes(tier.tier) && (
+                <CardFooter className="pt-4 mt-auto bg-slate-50/50 dark:bg-slate-900/20 border-t border-slate-100 dark:border-slate-800">
+                  <div className="w-full flex flex-col gap-3">
                     <Button 
-                      variant="outline" 
-                      className="w-full py-5 text-sm border-slate-300 dark:border-slate-700"
-                      onClick={() => {
-                        const email = localStorage.getItem('userEmail') || '';
-                        const firstName = localStorage.getItem('userFirstName') || '';
-                        const lastName = localStorage.getItem('userLastName') || '';
-                        const qs = new URLSearchParams({ plan: tier.tier, email, firstName, lastName, billingCycle, trial: '1' });
-                        window.location.href = `/checkout?${qs.toString()}`;
-                      }}
+                      className={`w-full py-5 text-sm font-medium ${
+                        tier.popular 
+                          ? 'bg-orange-500 hover:bg-orange-600 text-white' 
+                          : 'bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900'
+                      }`}
+                      onClick={() => handleUpgrade(tier.tier)}
                     >
-                      Start 14-day Free Trial
+                      {tier.cta}
                     </Button>
-                  )}
+                    {['INDIVIDUAL','STARTUP','BUSINESS'].includes(tier.tier) && (
+                      <Button 
+                        variant="outline" 
+                        className="w-full py-5 text-sm border-slate-300 dark:border-slate-700"
+                        onClick={() => {
+                          const email = localStorage.getItem('userEmail') || '';
+                          const firstName = localStorage.getItem('userFirstName') || '';
+                          const lastName = localStorage.getItem('userLastName') || '';
+                          const qs = new URLSearchParams({ plan: tier.tier, email, firstName, lastName, billingCycle, trial: '1' });
+                          window.location.href = `/checkout?${qs.toString()}`;
+                        }}
+                      >
+                        Start 14-day Free Trial
+                      </Button>
+                    )}
+                  </div>
                 </CardFooter>
               </Card>
             );
