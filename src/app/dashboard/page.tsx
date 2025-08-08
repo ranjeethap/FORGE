@@ -110,32 +110,40 @@ export default function DashboardPage() {
                       Account Settings
                     </Link>
                     <div className="border-t border-slate-200 dark:border-slate-700 my-1"></div>
-                    <button
-                      onClick={() => {
-                        // Set user to Ranjeeth
-                        localStorage.setItem('userEmail', 'ranjeeth_ap@outlook.com');
-                        window.location.reload();
-                      }}
-                      className="block w-full px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700 text-left"
-                    >
-                      Switch to Ranjeeth
-                    </button>
-                    <button
-                      onClick={() => {
-                        // Set user to Demo
-                        localStorage.setItem('userEmail', 'demo@example.com');
-                        window.location.reload();
-                      }}
-                      className="block w-full px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-slate-700 text-left"
-                    >
-                      Switch to Demo
-                    </button>
+                    {userProfile?.role === 'ADMIN' && (
+                      <>
+                        <button
+                          onClick={() => {
+                            // Set user to Ranjeeth
+                            localStorage.setItem('userEmail', 'ranjeeth_ap@outlook.com');
+                            window.location.reload();
+                          }}
+                          className="block w-full px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700 text-left"
+                        >
+                          Switch to Ranjeeth (Admin)
+                        </button>
+                        <button
+                          onClick={() => {
+                            // Set user to Demo
+                            localStorage.setItem('userEmail', 'demo@example.com');
+                            window.location.reload();
+                          }}
+                          className="block w-full px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-slate-700 text-left"
+                        >
+                          Switch to Demo (User)
+                        </button>
+                      </>
+                    )}
                     <div className="border-t border-slate-200 dark:border-slate-700 my-1"></div>
                     <button
                       onClick={() => {
-                        // Simple sign out - redirect to landing page
+                        // Clear all user data and redirect to landing page
                         localStorage.removeItem('userEmail');
-                        window.location.href = '/';
+                        localStorage.removeItem('userPlan');
+                        // Clear any other user-related data
+                        sessionStorage.clear();
+                        // Redirect to landing page with cache-busting parameter
+                        window.location.href = '/?logout=true&t=' + Date.now();
                       }}
                       className="block w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700 text-left"
                     >

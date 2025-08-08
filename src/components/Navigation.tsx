@@ -1,28 +1,76 @@
-import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
-import { Crown, Settings } from "lucide-react";
+import { Crown, Settings, Users } from "lucide-react";
+import { useState, useEffect } from "react";
 
 export function AdminNavigation() {
-  const { user } = useUser();
-  const isAdmin = user?.publicMetadata?.role === 'ADMIN';
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  if (!isAdmin) return null;
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      try {
+        const userEmail = localStorage.getItem('userEmail') || 'demo@example.com';
+        const response = await fetch(`/api/users/profile?email=${userEmail}`);
+        if (response.ok) {
+          const userData = await response.json();
+          setIsAdmin(userData.role === 'ADMIN');
+        }
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAdminStatus();
+  }, []);
+
+  if (loading || !isAdmin) return null;
 
   return (
-    <Button asChild variant="ghost" size="sm">
-      <Link href="/admin" className="flex items-center gap-2">
-        <Settings className="h-4 w-4" />
-        <span>Admin Panel</span>
-      </Link>
-    </Button>
+    <div className="flex items-center gap-2">
+      <Button asChild variant="ghost" size="sm">
+        <Link href="/admin" className="flex items-center gap-2">
+          <Settings className="h-4 w-4" />
+          <span>Admin Panel</span>
+        </Link>
+      </Button>
+      <Button asChild variant="ghost" size="sm">
+        <Link href="/admin/manage-users" className="flex items-center gap-2">
+          <Users className="h-4 w-4" />
+          <span>Manage Users</span>
+        </Link>
+      </Button>
+    </div>
   );
 }
 
 export function SubscriptionBadge() {
-  const { user } = useUser();
-  const tier = (user?.publicMetadata?.subscriptionTier as string) || 'FREE';
+  const [tier, setTier] = useState('FREE');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const userEmail = localStorage.getItem('userEmail') || 'demo@example.com';
+        const response = await fetch(`/api/users/profile?email=${userEmail}`);
+        if (response.ok) {
+          const userData = await response.json();
+          setTier(userData.subscriptionTier || 'FREE');
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
+
+  if (loading) return null;
   
   return (
     <div className="flex items-center gap-2">

@@ -9,20 +9,22 @@ export default function SignUpPage() {
     lastName: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    selectedPlan: 'FREE'
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Store the user email in localStorage
+    // Store the user email and selected plan in localStorage
     if (formData.email) {
       localStorage.setItem('userEmail', formData.email);
+      localStorage.setItem('userPlan', formData.selectedPlan);
     }
     // Redirect to dashboard with the email as a parameter
-    window.location.href = `/dashboard?email=${encodeURIComponent(formData.email)}`;
+    window.location.href = `/dashboard?email=${encodeURIComponent(formData.email)}&plan=${encodeURIComponent(formData.selectedPlan)}`;
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
@@ -138,6 +140,31 @@ export default function SignUpPage() {
                   placeholder="Confirm your password"
                 />
               </div>
+            </div>
+
+            <div>
+              <label htmlFor="selectedPlan" className="block text-sm font-medium text-gray-700">
+                Choose your plan
+              </label>
+              <div className="mt-1">
+                <select
+                  id="selectedPlan"
+                  name="selectedPlan"
+                  required
+                  value={formData.selectedPlan}
+                  onChange={handleChange}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                >
+                  <option value="FREE">Free Plan - $0/month</option>
+                  <option value="INDIVIDUAL">Individual - $9/month</option>
+                  <option value="STARTUP">Startup - $29/month</option>
+                  <option value="BUSINESS">Business - $99/month</option>
+                  <option value="ENTERPRISE">Enterprise - Contact Sales</option>
+                </select>
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                You can upgrade or downgrade your plan at any time from your dashboard.
+              </p>
             </div>
 
             <div className="flex items-center">

@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
 
-    // Mock user profile data based on email
+    // Mock user profile data based on email with proper role management
     const getUserProfile = (email: string) => {
       if (email === 'ranjeeth_ap@outlook.com') {
         return {
@@ -19,27 +19,32 @@ export async function GET(request: NextRequest) {
           email: email,
           firstName: 'Ranjeeth',
           lastName: 'AP',
+          role: 'ADMIN', // Only admin user
           bio: 'Full-stack developer with 5+ years of experience in React, Node.js, and cloud technologies. Passionate about building scalable web applications and contributing to open-source projects.',
           location: 'San Francisco, CA',
           timezone: 'America/Los_Angeles',
           hourlyRate: 85,
           isAvailable: true,
-          subscriptionTier: 'INDIVIDUAL',
+          subscriptionTier: 'ENTERPRISE', // Admin gets enterprise plan
           subscriptionStatus: 'ACTIVE',
         };
       } else {
+        // Default plan for new users
+        const defaultPlan = 'FREE';
+        
         return {
           id: '2',
           clerkId: 'clerk_mock_user_2',
           email: email,
           firstName: 'Demo',
           lastName: 'User',
+          role: 'USER', // Regular user
           bio: 'Full-stack developer with 5+ years of experience in React, Node.js, and cloud technologies. Passionate about building scalable web applications and contributing to open-source projects.',
           location: 'San Francisco, CA',
           timezone: 'America/Los_Angeles',
           hourlyRate: 85,
           isAvailable: true,
-          subscriptionTier: 'INDIVIDUAL',
+          subscriptionTier: defaultPlan, // Use stored plan or default to free
           subscriptionStatus: 'ACTIVE',
         };
       }
