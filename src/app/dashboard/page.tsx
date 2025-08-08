@@ -33,6 +33,8 @@ export default function DashboardPage() {
         const plan = urlParams.get('plan') || localStorage.getItem('userPlan') || undefined;
         const firstName = urlParams.get('firstName') || localStorage.getItem('userFirstName') || undefined;
         const lastName = urlParams.get('lastName') || localStorage.getItem('userLastName') || undefined;
+        const billingCycle = (urlParams.get('billingCycle') as 'monthly' | 'yearly') || (localStorage.getItem('userBillingCycle') as 'monthly' | 'yearly') || undefined;
+        const trial = urlParams.get('trial') === '1' || localStorage.getItem('userTrial') === '1' || undefined;
 
         if (!userEmail) {
           if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -46,6 +48,8 @@ export default function DashboardPage() {
         if (plan) qs.set('plan', plan);
         if (firstName) qs.set('firstName', firstName);
         if (lastName) qs.set('lastName', lastName);
+        if (billingCycle) qs.set('billingCycle', billingCycle);
+        if (trial) qs.set('trial', '1');
 
         const response = await fetch(`/api/users/profile?${qs.toString()}`);
         if (response.ok) {
@@ -55,6 +59,8 @@ export default function DashboardPage() {
           if (plan) localStorage.setItem('userPlan', plan);
           if (firstName) localStorage.setItem('userFirstName', firstName);
           if (lastName) localStorage.setItem('userLastName', lastName);
+          if (billingCycle) localStorage.setItem('userBillingCycle', billingCycle);
+          if (trial) localStorage.setItem('userTrial', '1');
         }
       } catch (error) {
         console.error('Error fetching user profile:', error);

@@ -200,12 +200,18 @@ export default function PricingPage() {
       return;
     }
 
-    // Always go to checkout in mock flow
     const params = new URLSearchParams(window.location.search);
     const email = params.get('email') || localStorage.getItem('userEmail') || '';
     const firstName = params.get('firstName') || localStorage.getItem('userFirstName') || '';
     const lastName = params.get('lastName') || localStorage.getItem('userLastName') || '';
-    window.location.href = `/checkout?plan=${encodeURIComponent(tier)}&email=${encodeURIComponent(email)}&firstName=${encodeURIComponent(firstName)}&lastName=${encodeURIComponent(lastName)}`;
+    const qs = new URLSearchParams({
+      plan: tier,
+      email,
+      firstName,
+      lastName,
+      billingCycle,
+    });
+    window.location.href = `/checkout?${qs.toString()}`;
   };
 
   return (
@@ -330,16 +336,29 @@ export default function PricingPage() {
                 </CardContent>
 
                 <CardFooter className="pt-6">
-                  <Button 
-                    className={`w-full py-6 text-base font-medium ${
-                      tier.popular 
-                        ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-sm' 
-                        : 'bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900'
-                    }`}
-                    onClick={() => handleUpgrade(tier.tier)}
-                  >
-                    {tier.cta}
-                  </Button>
+                  <div className="flex flex-col gap-3 w-full">
+                    <Button 
+                      className={`w-full py-6 text-base font-medium ${
+                        tier.popular 
+                          ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-sm' 
+                          : 'bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900'
+                      }`}
+                      onClick={() => handleUpgrade(tier.tier)}
+                    >
+                      {tier.cta}
+                    </Button>
+                    {['INDIVIDUAL','STARTUP','BUSINESS'].includes(tier.tier) && (
+                      <Button variant="outline" className="w-full py-6" onClick={() => {
+                        const email = localStorage.getItem('userEmail') || '';
+                        const firstName = localStorage.getItem('userFirstName') || '';
+                        const lastName = localStorage.getItem('userLastName') || '';
+                        const qs = new URLSearchParams({ plan: tier.tier, email, firstName, lastName, billingCycle, trial: '1' });
+                        window.location.href = `/checkout?${qs.toString()}`;
+                      }}>
+                        Start 14-day Free Trial
+                      </Button>
+                    )}
+                  </div>
                 </CardFooter>
               </Card>
             );

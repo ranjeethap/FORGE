@@ -12,25 +12,44 @@ export default function SignUpPage() {
     confirmPassword: '',
     selectedPlan: 'FREE'
   });
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const isPaidPlan = ['INDIVIDUAL', 'STARTUP', 'BUSINESS'].includes(formData.selectedPlan);
+  const [trial, setTrial] = useState<boolean>(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Store the user email, selected plan, and names in localStorage
     if (formData.email) {
       localStorage.setItem('userEmail', formData.email);
       localStorage.setItem('userPlan', formData.selectedPlan);
       localStorage.setItem('userFirstName', formData.firstName);
       localStorage.setItem('userLastName', formData.lastName);
+      localStorage.setItem('userBillingCycle', billingCycle);
+      localStorage.setItem('userTrial', trial ? '1' : '0');
     }
 
-    // If user chose a paid plan, send them to pricing/checkout first
     if (formData.selectedPlan && formData.selectedPlan !== 'FREE') {
-      window.location.href = `/checkout?plan=${encodeURIComponent(formData.selectedPlan)}&email=${encodeURIComponent(formData.email)}&firstName=${encodeURIComponent(formData.firstName)}&lastName=${encodeURIComponent(formData.lastName)}&source=signup`;
+      const qs = new URLSearchParams({
+        plan: formData.selectedPlan,
+        email: formData.email,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        source: 'signup',
+        billingCycle,
+      });
+      if (trial) qs.set('trial', '1');
+      window.location.href = `/checkout?${qs.toString()}`;
       return;
     }
 
-    // For free plan, go straight to dashboard with context
-    window.location.href = `/dashboard?email=${encodeURIComponent(formData.email)}&plan=${encodeURIComponent(formData.selectedPlan)}&firstName=${encodeURIComponent(formData.firstName)}&lastName=${encodeURIComponent(formData.lastName)}`;
+    const qs = new URLSearchParams({
+      email: formData.email,
+      plan: formData.selectedPlan,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      billingCycle,
+    });
+    if (trial) qs.set('trial', '1');
+    window.location.href = `/dashboard?${qs.toString()}`;
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -175,6 +194,36 @@ export default function SignUpPage() {
                 You can upgrade or downgrade your plan at any time from your dashboard.
               </p>
             </div>
+
+            {/* Billing cycle toggle */}
+            <div className="flex items-center justify-between">
+              <span className={`text-sm font-medium ${billingCycle === 'monthly' ? 'text-gray-900' : 'text-gray-500'}`}>Monthly</span>
+              <button
+                type="button"
+                onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${billingCycle === 'yearly' ? 'bg-blue-600' : 'bg-gray-300'}`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${billingCycle === 'yearly' ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
+              <span className={`text-sm font-medium ${billingCycle === 'yearly' ? 'text-gray-900' : 'text-gray-500'}`}>Yearly <span className="ml-1 text-xs text-green-600">Save 20%</span></span>
+            </div>
+
+            {/* Trial option for paid plans */}
+            {isPaidPlan && (
+              <div className="flex items-center">
+                <input
+                  id="trial"
+                  name="trial"
+                  type="checkbox"
+                  checked={trial}
+                  onChange={(e) => setTrial(e.target.checked)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="trial" className="ml-2 block text-sm text-gray-900">
+                  Start 14-day free trial (no charge today)
+                </label>
+              </div>
+            )}
 
             <div className="flex items-center">
               <input

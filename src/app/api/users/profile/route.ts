@@ -8,6 +8,8 @@ export async function GET(request: NextRequest) {
     const overrideTier = searchParams.get('plan');
     const overrideFirst = searchParams.get('firstName');
     const overrideLast = searchParams.get('lastName');
+    const billingCycle = (searchParams.get('billingCycle') as 'monthly' | 'yearly') || 'monthly';
+    const trial = searchParams.get('trial') === '1';
 
     if (!email) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
@@ -29,7 +31,8 @@ export async function GET(request: NextRequest) {
           hourlyRate: 85,
           isAvailable: true,
           subscriptionTier: 'ENTERPRISE',
-          subscriptionStatus: 'ACTIVE',
+          subscriptionStatus: trial ? 'TRIALING' : 'ACTIVE',
+          billingCycle,
         };
       } else {
         const defaultPlan = 'FREE';
@@ -48,7 +51,8 @@ export async function GET(request: NextRequest) {
           hourlyRate: 85,
           isAvailable: true,
           subscriptionTier: finalTier,
-          subscriptionStatus: 'ACTIVE',
+          subscriptionStatus: trial ? 'TRIALING' : 'ACTIVE',
+          billingCycle,
         };
       }
     };

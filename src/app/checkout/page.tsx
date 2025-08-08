@@ -18,6 +18,8 @@ export default function CheckoutPage() {
   const [email, setEmail] = useState<string>('');
   const [firstName, setFirstName] = useState<string>('');
   const [lastName, setLastName] = useState<string>('');
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const [trial, setTrial] = useState<boolean>(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -26,20 +28,41 @@ export default function CheckoutPage() {
     setEmail(params.get('email') || localStorage.getItem('userEmail') || '');
     setFirstName(params.get('firstName') || localStorage.getItem('userFirstName') || '');
     setLastName(params.get('lastName') || localStorage.getItem('userLastName') || '');
+    const bc = (params.get('billingCycle') as 'monthly' | 'yearly') || (localStorage.getItem('userBillingCycle') as 'monthly' | 'yearly') || 'monthly';
+    setBillingCycle(bc);
+    setTrial(params.get('trial') === '1' || localStorage.getItem('userTrial') === '1');
   }, []);
 
-  const price = useMemo(() => PLAN_PRICES[plan] ?? null, [plan]);
+  const basePrice = useMemo(() => PLAN_PRICES[plan] ?? null, [plan]);
+  const price = useMemo(() => {
+    if (basePrice === null) return null;
+    if (basePrice === 0) return 0;
+    const perMonth = billingCycle === 'yearly' ? Math.floor(basePrice * 0.8) : basePrice;
+    return perMonth;
+  }, [basePrice, billingCycle]);
 
   const handleConfirm = () => {
     if (!email) {
       alert('Please enter your email to continue');
       return;
     }
-    if (email) localStorage.setItem('userEmail', email);
+    localStorage.setItem('userEmail', email);
     localStorage.setItem('userPlan', plan);
+    localStorage.setItem('userBillingCycle', billingCycle);
+    localStorage.setItem('userTrial', trial ? '1' : '0');
     if (firstName) localStorage.setItem('userFirstName', firstName);
     if (lastName) localStorage.setItem('userLastName', lastName);
-    window.location.href = `/dashboard?email=${encodeURIComponent(email)}&plan=${encodeURIComponent(plan)}&firstName=${encodeURIComponent(firstName)}&lastName=${encodeURIComponent(lastName)}&payment=success`;
+
+    const qs = new URLSearchParams({
+      email,
+      plan,
+      firstName,
+      lastName,
+      billingCycle,
+    });
+    if (trial) qs.set('trial', '1');
+
+    window.location.href = `/dashboard?${qs.toString()}&payment=success`;
   };
 
   return (
@@ -47,12 +70,18 @@ export default function CheckoutPage() {
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         <div className="mb-6 flex items-center justify-between">
           <Link href="/pricing" className="text-sm text-slate-600 hover:text-slate-900">← Back to Pricing</Link>
-          <select className="border rounded px-3 py-2" value={plan} onChange={e => setPlan(e.target.value.toUpperCase())}>
-            <option value="FREE">Free - $0</option>
-            <option value="INDIVIDUAL">Individual - $29/mo</option>
-            <option value="STARTUP">Startup - $79/mo</option>
-            <option value="BUSINESS">Business - $199/mo</option>
-          </select>
+          <div className="flex items-center gap-3">
+            <select className="border rounded px-3 py-2" value={billingCycle} onChange={e => setBillingCycle(e.target.value as 'monthly' | 'yearly')}>
+              <option value="monthly">Monthly</option>
+              <option value="yearly">Yearly (Save 20%)</option>
+            </select>
+            <select className="border rounded px-3 py-2" value={plan} onChange={e => setPlan(e.target.value.toUpperCase())}>
+              <option value="FREE">Free - $0</option>
+              <option value="INDIVIDUAL">Individual - $29/mo</option>
+              <option value="STARTUP">Startup - $79/mo</option>
+              <option value="BUSINESS">Business - $199/mo</option>
+            </select>
+          </div>
         </div>
         <Card>
           <CardHeader>
@@ -62,12 +91,18 @@ export default function CheckoutPage() {
             <div className="space-y-4">
               <div className="flex justify-between">
                 <span className="text-slate-600">Selected Plan</span>
-                <span className="font-medium">{plan}</span>
+                <span className="font-medium">{plan} {trial && ['INDIVIDUAL','STARTUP','BUSINESS'].includes(plan) ? <span className="text-xs text-green-600">(14-day trial)</span> : null}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-600">Price</span>
-                <span className="font-medium">{price === null ? 'Custom' : price === 0 ? '$0' : `$${price}/mo`}</span>
+                <span className="font-medium">{price === null ? 'Custom' : price === 0 ? '$0' : `$${price}/mo`} {billingCycle === 'yearly' && price ? <span className="text-xs text-slate-500">billed yearly</span> : null}</span>
               </div>
+              {['INDIVIDUAL','STARTUP','BUSINESS'].includes(plan) && (
+                <div className="flex items-center">
+                  <input id="trial" type="checkbox" className="h-4 w-4 mr-2" checked={trial} onChange={(e) => setTrial(e.target.checked)} />
+                  <label htmlFor="trial" className="text-sm text-slate-700">Start 14-day free trial (no charge today)</label>
+                </div>
+              )}
               <div className="flex flex-col gap-2">
                 <label className="text-sm text-slate-600">Email</label>
                 <input value={email} onChange={e => setEmail(e.target.value)} className="border rounded px-3 py-2" placeholder="you@example.com" />
@@ -84,7 +119,7 @@ export default function CheckoutPage() {
               </div>
               <div className="pt-4 flex gap-3">
                 <Button className="flex-1" onClick={handleConfirm}>
-                  {price && price > 0 ? `Confirm and Pay - $${price}/mo` : 'Activate Free Plan'}
+                  {price && price > 0 ? (trial ? 'Start Trial' : `Confirm and Pay - $${price}/mo`) : 'Activate Free Plan'}
                 </Button>
                 <Button variant="outline" onClick={() => (window.location.href = '/pricing')}>Cancel</Button>
               </div>

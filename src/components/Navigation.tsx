@@ -50,14 +50,17 @@ export function SubscriptionBadge() {
       try {
         const userEmail = localStorage.getItem('userEmail') || 'demo@example.com';
         const planOverride = localStorage.getItem('userPlan') || undefined;
+        const billingCycle = localStorage.getItem('userBillingCycle') || undefined;
+        const trial = localStorage.getItem('userTrial') === '1';
         const qs = new URLSearchParams({ email: userEmail });
         if (planOverride) qs.set('plan', planOverride);
+        if (billingCycle) qs.set('billingCycle', billingCycle);
+        if (trial) qs.set('trial', '1');
         const response = await fetch(`/api/users/profile?${qs.toString()}`);
         if (response.ok) {
           const userData = await response.json();
           setTier(userData.subscriptionTier || 'FREE');
         } else {
-          // fallback to local storage plan if API fails
           setTier(planOverride || 'FREE');
         }
       } catch (error) {
