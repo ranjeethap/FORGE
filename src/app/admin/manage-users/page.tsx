@@ -195,9 +195,15 @@ export default function ManageUsersPage() {
             <div className="flex items-center space-x-4">
               <Link
                 href="/admin"
-                className="text-blue-600 hover:text-blue-800 font-semibold"
+                className="text-blue-600 hover:text-blue-800 font-semibold mr-4"
               >
-                ← Back to Admin
+                ← Back to Admin Panel
+              </Link>
+              <Link
+                href="/dashboard"
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Back to Dashboard
               </Link>
             </div>
           </div>

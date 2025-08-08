@@ -37,12 +37,6 @@ export function AdminNavigation() {
           <span>Admin Panel</span>
         </Link>
       </Button>
-      <Button asChild variant="ghost" size="sm">
-        <Link href="/admin/manage-users" className="flex items-center gap-2">
-          <Users className="h-4 w-4" />
-          <span>Manage Users</span>
-        </Link>
-      </Button>
     </div>
   );
 }

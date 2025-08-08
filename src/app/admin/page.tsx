@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
@@ -17,7 +18,15 @@ import {
   Activity,
   UserCheck,
   UserX,
-  Crown
+  Crown,
+  ArrowLeft,
+  MoreHorizontal,
+  Edit,
+  Trash2,
+  Eye,
+  Download,
+  Filter,
+  Search
 } from 'lucide-react';
 
 interface AdminStats {
@@ -178,8 +187,19 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleUserAction = async (userId: string, action: 'suspend' | 'activate' | 'promote' | 'demote') => {
+  const handleUserAction = async (userId: string, action: 'suspend' | 'activate' | 'promote' | 'demote' | 'view' | 'edit') => {
     try {
+      // Handle view and edit actions
+      if (action === 'view') {
+        alert(`Viewing user ${userId} details`);
+        return;
+      }
+      if (action === 'edit') {
+        alert(`Editing user ${userId}`);
+        return;
+      }
+
+      // Handle other actions via API
       const response = await fetch('/api/admin/users', {
         method: 'PATCH',
         headers: {
@@ -252,9 +272,17 @@ export default function AdminDashboard() {
             Manage users, subscriptions, and platform operations
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Shield className="h-5 w-5 text-yellow-500" />
-          <Badge variant="secondary">Admin Access</Badge>
+        <div className="flex items-center gap-4">
+          <Button asChild variant="outline">
+            <Link href="/dashboard" className="flex items-center gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Dashboard
+            </Link>
+          </Button>
+          <div className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-yellow-500" />
+            <Badge variant="secondary">Admin Access</Badge>
+          </div>
         </div>
       </div>
 
@@ -294,11 +322,12 @@ export default function AdminDashboard() {
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="actions">Actions</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
@@ -366,13 +395,31 @@ export default function AdminDashboard() {
         <TabsContent value="users" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>User Management</CardTitle>
-              <CardDescription>Manage user accounts, roles, and subscriptions</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>User Management</CardTitle>
+                  <CardDescription>Manage user accounts, roles, and subscriptions</CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm">
+                    <Search className="h-4 w-4 mr-2" />
+                    Search
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    <Filter className="h-4 w-4 mr-2" />
+                    Filter
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    <Download className="h-4 w-4 mr-2" />
+                    Export
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {users.map((user) => (
-                  <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <h4 className="font-medium">
@@ -388,9 +435,26 @@ export default function AdminDashboard() {
                           {user.subscriptionTier}
                         </Badge>
                         <Badge variant="outline">{user.role}</Badge>
+                        <span className="text-xs text-muted-foreground">
+                          Joined {new Date(user.createdAt).toLocaleDateString()}
+                        </span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleUserAction(user.id, 'view')}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleUserAction(user.id, 'edit')}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
@@ -441,6 +505,115 @@ export default function AdminDashboard() {
               </p>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Actions Tab */}
+        <TabsContent value="actions" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* User Management Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle>User Management</CardTitle>
+                <CardDescription>Advanced user management actions</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button variant="outline" className="w-full justify-start">
+                  <Users className="h-4 w-4 mr-2" />
+                  Bulk User Operations
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <UserCheck className="h-4 w-4 mr-2" />
+                  Approve Pending Users
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <UserX className="h-4 w-4 mr-2" />
+                  Suspend Inactive Users
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <Crown className="h-4 w-4 mr-2" />
+                  Manage Admin Roles
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* System Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle>System Operations</CardTitle>
+                <CardDescription>Platform maintenance and operations</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button variant="outline" className="w-full justify-start">
+                  <Settings className="h-4 w-4 mr-2" />
+                  System Configuration
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <Activity className="h-4 w-4 mr-2" />
+                  Performance Monitoring
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <Shield className="h-4 w-4 mr-2" />
+                  Security Settings
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <Download className="h-4 w-4 mr-2" />
+                  Backup & Restore
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Data Management */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Data Management</CardTitle>
+                <CardDescription>Data operations and reporting</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button variant="outline" className="w-full justify-start">
+                  <Download className="h-4 w-4 mr-2" />
+                  Export User Data
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <TrendingUp className="h-4 w-4 mr-2" />
+                  Generate Reports
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Data Analytics
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Cleanup Old Data
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Communication */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Communication</CardTitle>
+                <CardDescription>Platform-wide communication tools</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button variant="outline" className="w-full justify-start">
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                  Send Notifications
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <DollarSign className="h-4 w-4 mr-2" />
+                  Billing Alerts
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <Users className="h-4 w-4 mr-2" />
+                  User Announcements
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <Settings className="h-4 w-4 mr-2" />
+                  System Maintenance
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* Settings Tab */}
