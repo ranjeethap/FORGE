@@ -54,6 +54,42 @@ export default function AdminDashboard() {
     fetchAdminData();
   }, []);
 
+  // Add error handling for admin access
+  useEffect(() => {
+    const checkAdminAccess = async () => {
+      try {
+        const userEmail = localStorage.getItem('userEmail');
+        if (!userEmail) {
+          // Redirect to sign-in if no user email
+          window.location.href = '/sign-in';
+          return;
+        }
+
+        const response = await fetch(`/api/users/profile?email=${userEmail}`);
+        if (response.ok) {
+          const userData = await response.json();
+          if (userData.role !== 'ADMIN') {
+            // Show access denied message instead of redirecting
+            console.log('Access denied: User is not admin');
+            // Redirect to dashboard with message
+            window.location.href = '/dashboard?message=admin_access_denied';
+            return;
+          }
+        } else {
+          console.error('Failed to fetch user profile');
+          window.location.href = '/dashboard?message=profile_fetch_error';
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking admin access:', error);
+        // Don't redirect on error, just log it
+        return;
+      }
+    };
+
+    checkAdminAccess();
+  }, []);
+
   const fetchAdminData = async () => {
     try {
       const [statsResponse, usersResponse] = await Promise.all([

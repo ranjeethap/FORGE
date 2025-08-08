@@ -36,8 +36,14 @@ export default function ManageUsersPage() {
       try {
         setLoading(true);
         
-        // Get current user
-        const userEmail = localStorage.getItem('userEmail') || 'demo@example.com';
+                // Get current user
+        const userEmail = localStorage.getItem('userEmail');
+        if (!userEmail) {
+          setMessage({ type: 'error', text: 'Please sign in to access this page.' });
+          setLoading(false);
+          return;
+        }
+
         const userResponse = await fetch(`/api/users/profile?email=${userEmail}`);
         if (userResponse.ok) {
           const userData = await userResponse.json();
@@ -46,8 +52,13 @@ export default function ManageUsersPage() {
           // Check if user is admin
           if (userData.role !== 'ADMIN') {
             setMessage({ type: 'error', text: 'Access denied. Only admin users can manage user plans.' });
+            setLoading(false);
             return;
           }
+        } else {
+          setMessage({ type: 'error', text: 'Failed to load user profile.' });
+          setLoading(false);
+          return;
         }
 
         // Fetch users and plans
@@ -122,6 +133,26 @@ export default function ManageUsersPage() {
       setIsChangingPlan(false);
     }
   };
+
+  // Show error message if there's one
+  if (message?.type === 'error' && !loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <h1 className="text-xl font-bold mb-2">Access Denied</h1>
+            <p>{message.text}</p>
+          </div>
+          <Link 
+            href="/dashboard" 
+            className="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
+          >
+            Return to Dashboard
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
