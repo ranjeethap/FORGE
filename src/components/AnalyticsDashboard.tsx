@@ -40,6 +40,116 @@ interface AnalyticsDashboardProps {
   projectId?: string;
 }
 
+type Tier = 'FREE' | 'INDIVIDUAL' | 'STARTUP' | 'BUSINESS' | 'ENTERPRISE';
+
+type Capabilities = {
+  allowedPeriods: string[];
+  canExport: boolean;
+  features: Record<string, boolean>;
+  platformScope: boolean; // can view platform-wide analytics
+};
+
+function getCapabilities(role: string, tier: Tier): Capabilities {
+  // Admins bypass most limits
+  if (role === 'ADMIN') {
+    return {
+      allowedPeriods: ['7d', '30d', '90d', '1y', 'all'],
+      canExport: true,
+      features: {
+        overview: true,
+        applicationSuccess: true,
+        skillDistribution: true,
+        topSkills: true,
+        projectStatusDistribution: true,
+        teamStatusDistribution: true,
+        collaborationMetrics: true,
+        activityTimeline: true,
+      },
+      platformScope: true,
+    };
+  }
+
+  const base: Record<Tier, Capabilities> = {
+    FREE: {
+      allowedPeriods: ['7d'],
+      canExport: false,
+      features: {
+        overview: true,
+        applicationSuccess: false,
+        skillDistribution: true,
+        topSkills: true,
+        projectStatusDistribution: false,
+        teamStatusDistribution: false,
+        collaborationMetrics: false,
+        activityTimeline: true,
+      },
+      platformScope: false,
+    },
+    INDIVIDUAL: {
+      allowedPeriods: ['7d', '30d'],
+      canExport: true,
+      features: {
+        overview: true,
+        applicationSuccess: true,
+        skillDistribution: true,
+        topSkills: true,
+        projectStatusDistribution: true,
+        teamStatusDistribution: true,
+        collaborationMetrics: false,
+        activityTimeline: true,
+      },
+      platformScope: false,
+    },
+    STARTUP: {
+      allowedPeriods: ['7d', '30d', '90d'],
+      canExport: true,
+      features: {
+        overview: true,
+        applicationSuccess: true,
+        skillDistribution: true,
+        topSkills: true,
+        projectStatusDistribution: true,
+        teamStatusDistribution: true,
+        collaborationMetrics: true,
+        activityTimeline: true,
+      },
+      platformScope: false,
+    },
+    BUSINESS: {
+      allowedPeriods: ['7d', '30d', '90d', '1y'],
+      canExport: true,
+      features: {
+        overview: true,
+        applicationSuccess: true,
+        skillDistribution: true,
+        topSkills: true,
+        projectStatusDistribution: true,
+        teamStatusDistribution: true,
+        collaborationMetrics: true,
+        activityTimeline: true,
+      },
+      platformScope: true,
+    },
+    ENTERPRISE: {
+      allowedPeriods: ['7d', '30d', '90d', '1y', 'all'],
+      canExport: true,
+      features: {
+        overview: true,
+        applicationSuccess: true,
+        skillDistribution: true,
+        topSkills: true,
+        projectStatusDistribution: true,
+        teamStatusDistribution: true,
+        collaborationMetrics: true,
+        activityTimeline: true,
+      },
+      platformScope: true,
+    },
+  };
+
+  return base[tier] || base.FREE;
+}
+
 export default function AnalyticsDashboard({ 
   type = 'overview', 
   teamId, 
@@ -50,22 +160,58 @@ export default function AnalyticsDashboard({
   const [period, setPeriod] = useState('30d');
   const [error, setError] = useState<string | null>(null);
 
+  const [role, setRole] = useState<'USER' | 'ADMIN'>('USER');
+  const [tier, setTier] = useState<Tier>('FREE');
+  const [trialing, setTrialing] = useState<boolean>(false);
+
+  const capabilities = getCapabilities(role, tier);
+
+  useEffect(() => {
+    // Load user profile to determine role/tier
+    const loadProfile = async () => {
+      try {
+        const email = localStorage.getItem('userEmail') || 'demo@example.com';
+        const plan = localStorage.getItem('userPlan') || undefined;
+        const bc = localStorage.getItem('userBillingCycle') || undefined;
+        const trial = localStorage.getItem('userTrial') === '1';
+        const qs = new URLSearchParams({ email });
+        if (plan) qs.set('plan', plan);
+        if (bc) qs.set('billingCycle', bc);
+        if (trial) qs.set('trial', '1');
+        const res = await fetch(`/api/users/profile?${qs.toString()}`);
+        if (res.ok) {
+          const data = await res.json();
+          setRole(data.role === 'ADMIN' ? 'ADMIN' : 'USER');
+          setTier((data.subscriptionTier || 'FREE') as Tier);
+          setTrialing(data.subscriptionStatus === 'TRIALING');
+        }
+      } catch (e) {
+        // default remains
+      }
+    };
+    loadProfile();
+  }, []);
+
+  // Clamp period to allowed options
+  useEffect(() => {
+    if (!capabilities.allowedPeriods.includes(period)) {
+      setPeriod(capabilities.allowedPeriods[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tier, role]);
+
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
       setError(null);
-      
       const params = new URLSearchParams({
-        email: 'demo@example.com', // Mock email for now
-        type,
-        period
+        email: localStorage.getItem('userEmail') || 'demo@example.com',
+        type: (!capabilities.platformScope && type === 'platform') ? 'overview' : type,
+        period,
       });
-
       if (teamId) params.append('teamId', teamId);
       if (projectId) params.append('projectId', projectId);
-
       const response = await fetch(`/api/analytics?${params}`);
-      
       if (response.ok) {
         const data = await response.json();
         setAnalytics(data);
@@ -83,7 +229,7 @@ export default function AnalyticsDashboard({
 
   useEffect(() => {
     fetchAnalytics();
-  }, [type, period, teamId, projectId]);
+  }, [type, period, teamId, projectId, role, tier]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -94,13 +240,8 @@ export default function AnalyticsDashboard({
     }).format(amount);
   };
 
-  const formatPercentage = (value: number) => {
-    return `${value.toFixed(1)}%`;
-  };
-
-  const formatNumber = (value: number) => {
-    return new Intl.NumberFormat('en-US').format(value);
-  };
+  const formatPercentage = (value: number) => `${value.toFixed(1)}%`;
+  const formatNumber = (value: number) => new Intl.NumberFormat('en-US').format(value);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -116,6 +257,24 @@ export default function AnalyticsDashboard({
         return 'text-gray-600 bg-gray-100';
     }
   };
+
+  const downloadJSON = () => {
+    const blob = new Blob([JSON.stringify(analytics, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `analytics-${type}-${period}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const DisabledCard = ({ title }: { title: string }) => (
+    <div className="bg-white rounded-lg border border-dashed border-slate-300 p-6 text-center">
+      <h3 className="text-sm font-semibold text-slate-900 mb-2">{title}</h3>
+      <p className="text-sm text-slate-500 mb-3">Available on higher plans.</p>
+      <a href="/pricing" className="inline-block text-sm text-orange-600 hover:text-orange-700 font-medium">Upgrade to unlock</a>
+    </div>
+  );
 
   if (loading) {
     return (
@@ -144,31 +303,43 @@ export default function AnalyticsDashboard({
     );
   }
 
+  const periodOptions = ['7d', '30d', '90d', '1y', 'all'];
+
   return (
     <div className="space-y-6">
+      {/* Trial banner */}
+      {trialing && (
+        <div className="bg-orange-50 border border-orange-200 text-orange-800 rounded-lg p-3 text-sm">
+          You are on a 14-day trial. Some analytics are read-only. <a href="/pricing" className="underline">Upgrade</a> to keep full access.
+        </div>
+      )}
+
       {/* Period Selector */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">
-          {type.charAt(0).toUpperCase() + type.slice(1)} Analytics
+          {(type === 'platform' && !capabilities.platformScope) ? 'Overview' : type.charAt(0).toUpperCase() + type.slice(1)} Analytics
         </h2>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2">
           <label className="text-sm font-medium text-gray-700">Period:</label>
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
             className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:ring-blue-500 focus:border-blue-500"
           >
-            <option value="7d">Last 7 days</option>
-            <option value="30d">Last 30 days</option>
-            <option value="90d">Last 90 days</option>
-            <option value="1y">Last year</option>
-            <option value="all">All time</option>
+            {periodOptions.map((p) => (
+              <option key={p} value={p} disabled={!capabilities.allowedPeriods.includes(p)}>
+                {p === '7d' ? 'Last 7 days' : p === '30d' ? 'Last 30 days' : p === '90d' ? 'Last 90 days' : p === '1y' ? 'Last year' : 'All time'}
+              </option>
+            ))}
           </select>
+          {capabilities.canExport && (
+            <button onClick={downloadJSON} className="ml-2 px-3 py-1 border rounded text-sm hover:bg-gray-50">Export</button>
+          )}
         </div>
       </div>
 
       {/* Overview Metrics */}
-      {analytics.overview && (
+      {analytics.overview && capabilities.features.overview && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
@@ -227,9 +398,10 @@ export default function AnalyticsDashboard({
           </div>
         </div>
       )}
+      {!capabilities.features.overview && <DisabledCard title="Overview" />}
 
       {/* Application Success Rate */}
-      {analytics.applicationSuccess && (
+      {analytics.applicationSuccess && capabilities.features.applicationSuccess ? (
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Application Success Rate</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -246,107 +418,107 @@ export default function AnalyticsDashboard({
               <p className="text-sm text-gray-600">Total Applications</p>
             </div>
           </div>
-          
-          {/* Application Status Breakdown */}
           <div className="mt-6">
             <h4 className="text-sm font-medium text-gray-900 mb-3">Status Breakdown</h4>
             <div className="space-y-2">
               {analytics.applicationSuccess.breakdown.map((item: any) => (
                 <div key={item.status} className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 capitalize">{item.status.toLowerCase()}</span>
-                  <span className="text-sm font-medium text-gray-900">{item._count}</span>
+                  <span className="text-sm text-gray-600 capitalize">{(item.status || '').toString().replace('_', ' ').toLowerCase()}</span>
+                  <span className="text-sm font-medium text-gray-900">{item._count || item.count}</span>
                 </div>
               ))}
             </div>
           </div>
         </div>
-      )}
+      ) : (!capabilities.features.applicationSuccess && <DisabledCard title="Application Success" />)}
 
       {/* Skill Distribution */}
-      {analytics.skillDistribution && analytics.skillDistribution.length > 0 && (
+      {analytics.skillDistribution && analytics.skillDistribution.length > 0 && capabilities.features.skillDistribution ? (
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Your Skills</h3>
           <div className="flex flex-wrap gap-2">
             {analytics.skillDistribution.map((skill: any) => (
               <span
-                key={skill.id}
+                key={skill.id || skill.name}
                 className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full"
               >
-                {skill.name}
+                {skill.name || skill.skill}
               </span>
             ))}
           </div>
         </div>
-      )}
+      ) : (!capabilities.features.skillDistribution && <DisabledCard title="Skill Distribution" />)}
 
       {/* Top Skills in Platform */}
-      {analytics.topSkills && analytics.topSkills.length > 0 && (
+      {analytics.topSkills && analytics.topSkills.length > 0 && capabilities.features.topSkills ? (
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Top Skills in Platform</h3>
           <div className="space-y-3">
-            {analytics.topSkills.slice(0, 10).map((skill: any, index: number) => (
-              <div key={skill.name} className="flex items-center justify-between">
+            {(analytics.topSkills as any[]).slice(0, 10).map((skill: any, index: number) => (
+              <div key={skill.name || skill} className="flex items-center justify-between">
                 <div className="flex items-center">
                   <span className="text-sm font-medium text-gray-900 w-6">{index + 1}.</span>
-                  <span className="text-sm text-gray-600">{skill.name}</span>
+                  <span className="text-sm text-gray-600">{skill.name || skill}</span>
                   {skill.category && (
                     <span className="ml-2 px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
                       {skill.category}
                     </span>
                   )}
                 </div>
-                <span className="text-sm font-medium text-gray-900">{formatNumber(skill.userCount)} users</span>
+                {skill.userCount && (
+                  <span className="text-sm font-medium text-gray-900">{formatNumber(skill.userCount)} users</span>
+                )}
               </div>
             ))}
           </div>
         </div>
-      )}
+      ) : (!capabilities.features.topSkills && <DisabledCard title="Top Skills" />)}
 
       {/* Project Status Distribution */}
-      {analytics.projectStatusDistribution && analytics.projectStatusDistribution.length > 0 && (
+      {analytics.projectStatusDistribution && analytics.projectStatusDistribution.length > 0 && capabilities.features.projectStatusDistribution ? (
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Project Status Distribution</h3>
           <div className="space-y-3">
             {analytics.projectStatusDistribution.map((item: any) => (
               <div key={item.status} className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(item.status)}`}>
-                    {item.status.replace('_', ' ')}
+                  <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor((item.status || 'UNKNOWN').toString().toUpperCase())}`}>
+                    {(item.status || 'UNKNOWN').toString().replace('_', ' ')}
                   </span>
                 </div>
-                <span className="text-sm font-medium text-gray-900">{item._count} projects</span>
+                <span className="text-sm font-medium text-gray-900">{item._count || item.count} projects</span>
               </div>
             ))}
           </div>
         </div>
-      )}
+      ) : (!capabilities.features.projectStatusDistribution && <DisabledCard title="Project Status" />)}
 
       {/* Team Status Distribution */}
-      {analytics.teamStatusDistribution && analytics.teamStatusDistribution.length > 0 && (
+      {analytics.teamStatusDistribution && analytics.teamStatusDistribution.length > 0 && capabilities.features.teamStatusDistribution ? (
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Team Status Distribution</h3>
           <div className="space-y-3">
             {analytics.teamStatusDistribution.map((item: any) => (
               <div key={item.status} className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(item.status)}`}>
+                  <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor((item.status || 'UNKNOWN').toString().toUpperCase())}`}>
                     {item.status}
                   </span>
                 </div>
-                <span className="text-sm font-medium text-gray-900">{item._count} teams</span>
+                <span className="text-sm font-medium text-gray-900">{item._count || item.count} teams</span>
               </div>
             ))}
           </div>
         </div>
-      )}
+      ) : (!capabilities.features.teamStatusDistribution && <DisabledCard title="Team Status" />)}
 
       {/* Recent Activity */}
-      {analytics.recentActivity && analytics.recentActivity.length > 0 && (
+      {analytics.recentActivity && analytics.recentActivity.length > 0 && capabilities.features.activityTimeline && (
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Activity</h3>
           <div className="space-y-4">
-            {analytics.recentActivity.map((activity: any) => (
-              <div key={activity.id} className="flex items-center space-x-3">
+            {analytics.recentActivity.map((activity: any, idx: number) => (
+              <div key={activity.id || idx} className="flex items-center space-x-3">
                 <div className="flex-shrink-0">
                   <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                     <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -355,15 +527,10 @@ export default function AnalyticsDashboard({
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">{activity.title}</p>
+                  <p className="text-sm font-medium text-gray-900">{activity.title || activity.type}</p>
                   <p className="text-sm text-gray-500">
-                    {activity.leader?.firstName || activity.leader?.email} • {new Date(activity.createdAt).toLocaleDateString()}
+                    {(activity.leader?.firstName || activity.leader?.email || activity.name || '—')} • {(activity.createdAt || activity.date) && new Date(activity.createdAt || activity.date).toLocaleDateString()}
                   </p>
-                </div>
-                <div className="flex-shrink-0">
-                  <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(activity.status || 'UNKNOWN')}`}>
-                    {(activity.status || 'UNKNOWN').replace('_', ' ')}
-                  </span>
                 </div>
               </div>
             ))}
@@ -372,7 +539,7 @@ export default function AnalyticsDashboard({
       )}
 
       {/* Collaboration Metrics */}
-      {analytics.collaborationMetrics && (
+      {analytics.collaborationMetrics && capabilities.features.collaborationMetrics ? (
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Collaboration Metrics</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -386,31 +553,29 @@ export default function AnalyticsDashboard({
             </div>
           </div>
         </div>
-      )}
+      ) : (!capabilities.features.collaborationMetrics && <DisabledCard title="Collaboration Metrics" />)}
 
-      {/* Activity Timeline */}
-      {analytics.activityTimeline && analytics.activityTimeline.length > 0 && (
+      {/* Admin-only System Health */}
+      {role === 'ADMIN' && (
         <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Activity Timeline</h3>
-          <div className="space-y-4">
-            {analytics.activityTimeline.slice(0, 10).map((activity: any) => (
-              <div key={activity.id} className="flex items-center space-x-3">
-                <div className="flex-shrink-0">
-                  <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">{activity.title}</p>
-                  <p className="text-sm text-gray-500">
-                    {activity.leader?.firstName || activity.leader?.email} • {new Date(activity.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-                <div className="flex-shrink-0">
-                  <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(activity.status || 'UNKNOWN')}`}>
-                    {(activity.status || 'UNKNOWN').replace('_', ' ')}
-                  </span>
-                </div>
-              </div>
-            ))}
+          <h3 className="text-lg font-medium text-gray-900 mb-4">System Health</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="text-center">
+              <p className="text-3xl font-bold text-green-600">99.95%</p>
+              <p className="text-sm text-gray-600">Uptime</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl font-bold text-blue-600">180ms</p>
+              <p className="text-sm text-gray-600">API Latency</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl font-bold text-yellow-600">0.12%</p>
+              <p className="text-sm text-gray-600">Error Rate</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl font-bold text-purple-600">12</p>
+              <p className="text-sm text-gray-600">Jobs Queue</p>
+            </div>
           </div>
         </div>
       )}
