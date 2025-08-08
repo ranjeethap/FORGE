@@ -1,0 +1,325 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "./src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  MODERATOR
+}
+
+enum SubscriptionTier {
+  FREE
+  INDIVIDUAL
+  STARTUP
+  BUSINESS
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  INACTIVE
+  CANCELLED
+  EXPIRED
+  TRIAL
+}
+
+enum NotificationType {
+  APPLICATION_RECEIVED
+  APPLICATION_APPROVED
+  APPLICATION_REJECTED
+  TEAM_INVITATION
+  PROJECT_INVITATION
+  MESSAGE_RECEIVED
+  PROJECT_UPDATE
+  TEAM_UPDATE
+  SYSTEM_ANNOUNCEMENT
+  SUBSCRIPTION_UPDATE
+  PAYMENT_REMINDER
+}
+
+enum ConversationType {
+  DIRECT
+  GROUP
+  TEAM
+  PROJECT
+}
+
+enum ParticipantRole {
+  ADMIN
+  MODERATOR
+  MEMBER
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  SYSTEM
+}
+
+enum ProjectStatus {
+  OPEN
+  IN_PROGRESS
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum TeamStatus {
+  OPEN
+  FULL
+  CLOSED
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  WITHDRAWN
+}
+
+model User {
+  id          String   @id @default(cuid())
+  clerkId     String?  @unique
+  email       String   @unique
+  firstName   String?
+  lastName    String?
+  avatar      String?
+  bio         String?
+  location    String?
+  timezone    String?
+  hourlyRate  Float?
+  experience  String?
+  education   String?
+  website     String?
+  linkedin    String?
+  github      String?
+  isAvailable Boolean  @default(true)
+  role        UserRole @default(USER)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Subscription and billing
+  subscriptionTier   SubscriptionTier   @default(FREE)
+  subscriptionStatus SubscriptionStatus @default(ACTIVE)
+  subscriptionStart  DateTime?
+  subscriptionEnd    DateTime?
+  trialEndsAt        DateTime?
+
+  // Features based on subscription
+  maxTeams             Int     @default(1)
+  maxProjects          Int     @default(3)
+  maxTeamMembers       Int     @default(5)
+  maxProjectMembers    Int     @default(3)
+  canCreateTeams       Boolean @default(true)
+  canCreateProjects    Boolean @default(true)
+  canInviteMembers     Boolean @default(true)
+  hasAdvancedAnalytics Boolean @default(false)
+  hasPrioritySupport   Boolean @default(false)
+  hasCustomBranding    Boolean @default(false)
+  hasAPIAccess         Boolean @default(false)
+
+  skills              Skill[]
+  customSkills        String[]                  @default([])
+  teamMemberships     TeamMember[]
+  ledTeams            Team[]                    @relation("TeamLeader")
+  projectMemberships  ProjectMember[]
+  ledProjects         Project[]                 @relation("ProjectLeader")
+  teamApplications    TeamApplication[]
+  projectApplications ProjectApplication[]
+  notifications       Notification[]
+  sentMessages        Message[]                 @relation("SentMessages")
+  receivedMessages    Message[]                 @relation("ReceivedMessages")
+  conversations       ConversationParticipant[]
+
+  // Admin actions
+  adminActions AdminAction[]
+}
+
+model SubscriptionPlan {
+  id           String           @id @default(cuid())
+  name         String
+  tier         SubscriptionTier @unique
+  description  String
+  price        Float
+  billingCycle String // monthly, yearly
+  features     Json // Store features as JSON
+  limits       Json // Store limits as JSON
+  isActive     Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+}
+
+model AdminAction {
+  id          String   @id @default(cuid())
+  action      String // e.g., "user_suspended", "team_deleted", "project_approved"
+  targetType  String // e.g., "user", "team", "project"
+  targetId    String
+  details     Json?
+  performedBy String
+  admin       User     @relation(fields: [performedBy], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model Skill {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  category  String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now())
+  users     User[]
+  teams     Team[]
+  projects  Project[]
+}
+
+model Team {
+  id           String            @id @default(cuid())
+  name         String
+  description  String?
+  status       TeamStatus        @default(OPEN)
+  maxMembers   Int               @default(5)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  leaderId     String
+  leader       User              @relation("TeamLeader", fields: [leaderId], references: [id])
+  members      TeamMember[]
+  skills       Skill[]
+  projects     Project[]
+  applications TeamApplication[]
+}
+
+model TeamMember {
+  id       String   @id @default(cuid())
+  role     String   @default("member") // leader, member, moderator
+  joinedAt DateTime @default(now())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id])
+  teamId   String
+  team     Team     @relation(fields: [teamId], references: [id])
+
+  @@unique([userId, teamId])
+}
+
+model TeamApplication {
+  id        String            @id @default(cuid())
+  message   String?
+  status    ApplicationStatus @default(PENDING)
+  appliedAt DateTime          @default(now())
+  updatedAt DateTime          @default(now())
+  userId    String
+  user      User              @relation(fields: [userId], references: [id])
+  teamId    String
+  team      Team              @relation(fields: [teamId], references: [id])
+
+  @@unique([userId, teamId])
+}
+
+model Project {
+  id             String               @id @default(cuid())
+  title          String
+  description    String?
+  status         ProjectStatus        @default(OPEN)
+  budget         Float?
+  hourlyRate     Float?
+  estimatedHours Int?
+  duration       String? // e.g., "2-4 weeks", "3-6 months"
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @default(now())
+  leaderId       String?
+  leader         User?                @relation("ProjectLeader", fields: [leaderId], references: [id])
+  teamId         String?
+  team           Team?                @relation(fields: [teamId], references: [id])
+  members        ProjectMember[]
+  skills         Skill[]
+  applications   ProjectApplication[]
+}
+
+model ProjectMember {
+  id        String   @id @default(cuid())
+  role      String   @default("member") // leader, member, contributor
+  joinedAt  DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id])
+
+  @@unique([userId, projectId])
+}
+
+model ProjectApplication {
+  id        String            @id @default(cuid())
+  message   String?
+  status    ApplicationStatus @default(PENDING)
+  appliedAt DateTime          @default(now())
+  updatedAt DateTime          @default(now())
+  userId    String
+  user      User              @relation(fields: [userId], references: [id])
+  projectId String
+  project   Project           @relation(fields: [projectId], references: [id])
+
+  @@unique([userId, projectId])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+}
+
+model Conversation {
+  id           String                    @id @default(cuid())
+  name         String?
+  type         ConversationType          @default(DIRECT)
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+  participants ConversationParticipant[]
+  messages     Message[]
+}
+
+model ConversationParticipant {
+  id             String          @id @default(cuid())
+  role           ParticipantRole @default(MEMBER)
+  joinedAt       DateTime        @default(now())
+  lastReadAt     DateTime?
+  userId         String
+  user           User            @relation(fields: [userId], references: [id])
+  conversationId String
+  conversation   Conversation    @relation(fields: [conversationId], references: [id])
+
+  @@unique([userId, conversationId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  content        String
+  messageType    MessageType  @default(TEXT)
+  isEdited       Boolean      @default(false)
+  editedAt       DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  senderId       String
+  sender         User         @relation("SentMessages", fields: [senderId], references: [id])
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  recipientId    String?
+  recipient      User?        @relation("ReceivedMessages", fields: [recipientId], references: [id])
+}
