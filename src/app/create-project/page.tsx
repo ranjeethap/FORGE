@@ -1,6 +1,5 @@
 'use client';
 
-import { useUser } from "@clerk/nextjs";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
@@ -24,7 +23,6 @@ interface Team {
 }
 
 export default function CreateProjectPage() {
-  const { user } = useUser();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -63,11 +61,8 @@ export default function CreateProjectPage() {
 
         if (teamsResponse.ok) {
           const teamsData = await teamsResponse.json();
-          const userEmail = user?.emailAddresses[0]?.emailAddress;
-          const userTeamsData = teamsData.filter((team: Team) => 
-            team.leader.email === userEmail
-          );
-          setUserTeams(userTeamsData);
+          const apiTeams: Team[] = Array.isArray(teamsData) ? teamsData : (Array.isArray(teamsData?.teams) ? teamsData.teams : []);
+          setUserTeams(apiTeams);
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -76,10 +71,8 @@ export default function CreateProjectPage() {
       }
     };
 
-    if (user) {
-      fetchData();
-    }
-  }, [user]);
+    fetchData();
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -100,11 +93,6 @@ export default function CreateProjectPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!user) {
-      setError('You must be signed in to create a project');
-      return;
-    }
 
     // Validation
     if (!formData.title.trim()) {
@@ -126,57 +114,39 @@ export default function CreateProjectPage() {
       setSubmitting(true);
       setError(null);
 
-      const response = await fetch('/api/projects', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-email': user.emailAddresses[0]?.emailAddress || '',
+      // Persist locally for mock flow
+      const createdProjects = JSON.parse(localStorage.getItem('createdProjects') || '[]');
+      const newProject = {
+        id: String(Date.now()),
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        requirements: formData.requirements.trim() || '',
+        hourlyRate: parseFloat(formData.hourlyRate),
+        budget: formData.budget ? parseFloat(formData.budget) : null,
+        estimatedHours: formData.estimatedHours ? parseInt(formData.estimatedHours) : null,
+        duration: formData.duration.trim() || null,
+        clientName: formData.clientName.trim() || null,
+        status: 'OPEN' as const,
+        team: null,
+        leader: {
+          firstName: localStorage.getItem('userFirstName') || 'You',
+          lastName: localStorage.getItem('userLastName') || '',
+          email: localStorage.getItem('userEmail') || 'demo@example.com',
         },
-        body: JSON.stringify({
-          title: formData.title.trim(),
-          description: formData.description.trim(),
-          requirements: formData.requirements.trim() || null,
-          hourlyRate: parseFloat(formData.hourlyRate),
-          budget: formData.budget ? parseFloat(formData.budget) : null,
-          estimatedHours: formData.estimatedHours ? parseInt(formData.estimatedHours) : null,
-          duration: formData.duration.trim() || null,
-          clientName: formData.clientName.trim() || null,
-          teamId: formData.teamId || null,
-          skillIds: formData.skills
-        })
-      });
+        skills: (formData.skills || []).map(id => ({ id, name: availableSkills.find(s => s.id === id)?.name || 'Skill', category: null })),
+        members: [],
+        createdAt: new Date().toISOString(),
+      };
+      localStorage.setItem('createdProjects', JSON.stringify([newProject, ...createdProjects]));
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create project');
-      }
-
-      // Redirect to the new project page
-      router.push(`/projects/${data.id}`);
+      // Redirect to projects list (the new project will appear there)
+      router.push('/projects');
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to create project');
     } finally {
       setSubmitting(false);
     }
   };
-
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Sign in required</h1>
-          <p className="text-gray-600 mb-6">You must be signed in to create a project</p>
-          <a
-            href="/"
-            className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
-          >
-            Go to Home
-          </a>
-        </div>
-      </div>
-    );
-  }
 
   if (loading) {
     return (

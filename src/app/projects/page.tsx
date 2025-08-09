@@ -86,10 +86,20 @@ export default function ProjectsPage() {
           fetch('/api/skills')
         ]);
 
+        let mergedProjects: Project[] = [];
+
         if (projectsResponse.ok) {
           const projectsData = await projectsResponse.json();
-          setProjects(projectsData);
-          setFilteredProjects(projectsData);
+          const apiProjects: Project[] = Array.isArray(projectsData) ? projectsData : (Array.isArray(projectsData?.projects) ? projectsData.projects : []);
+          const localCreated: Project[] = (() => { try { return JSON.parse(localStorage.getItem('createdProjects') || '[]'); } catch { return []; } })();
+          mergedProjects = [...localCreated, ...apiProjects];
+          setProjects(mergedProjects);
+          setFilteredProjects(mergedProjects);
+        } else {
+          const localCreated: Project[] = (() => { try { return JSON.parse(localStorage.getItem('createdProjects') || '[]'); } catch { return []; } })();
+          mergedProjects = localCreated;
+          setProjects(mergedProjects);
+          setFilteredProjects(mergedProjects);
         }
 
         if (profileResponse.ok) {
@@ -103,6 +113,9 @@ export default function ProjectsPage() {
         }
       } catch (error) {
         console.error('Error fetching projects data:', error);
+        const localCreated: Project[] = (() => { try { return JSON.parse(localStorage.getItem('createdProjects') || '[]'); } catch { return []; } })();
+        setProjects(localCreated);
+        setFilteredProjects(localCreated);
       } finally {
         setLoading(false);
       }
