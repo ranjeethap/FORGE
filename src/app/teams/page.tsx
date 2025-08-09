@@ -156,21 +156,21 @@ export default function TeamsPage() {
 
     let score = 0;
     const userSkills = [
-      ...userProfile.skills.map(s => s.name.toLowerCase()),
-      ...userProfile.customSkills.map(s => s.toLowerCase())
+      ...((userProfile?.skills || []).map(s => (s?.name || '').toLowerCase())),
+      ...((userProfile?.customSkills || []).map(s => (s || '').toLowerCase()))
     ];
-    const teamSkills = team.skills.map(s => s.name.toLowerCase());
+    const teamSkills = (team?.skills || []).map(s => (s?.name || '').toLowerCase());
 
     // Skill match (40% weight)
     const skillMatches = teamSkills.filter(skill => 
       userSkills.some(userSkill => 
-        userSkill.includes(skill) || skill.includes(userSkill)
+        userSkill && skill && (userSkill.includes(skill) || skill.includes(userSkill))
       )
     );
-    score += (skillMatches.length / teamSkills.length) * 40;
+    score += teamSkills.length > 0 ? (skillMatches.length / teamSkills.length) * 40 : 0;
 
     // Location match (20% weight)
-    if (userProfile.location && team.location) {
+    if (userProfile?.location && team?.location) {
       const userLocation = userProfile.location.toLowerCase();
       const teamLocation = team.location.toLowerCase();
       if (userLocation.includes('remote') || teamLocation.includes('remote')) {
@@ -181,21 +181,21 @@ export default function TeamsPage() {
     }
 
     // Hourly rate compatibility (20% weight)
-    if (userProfile.hourlyRate && team.hourlyRate) {
+    if (userProfile?.hourlyRate && team?.hourlyRate) {
       const rateDiff = Math.abs(userProfile.hourlyRate - team.hourlyRate);
       const rateScore = Math.max(0, 20 - (rateDiff / 10));
       score += rateScore;
     }
 
     // Team size preference (10% weight)
-    const currentMembers = team.members.length;
-    const availableSpots = team.maxMembers - currentMembers;
+    const currentMembers = (team?.members || []).length;
+    const availableSpots = (team?.maxMembers || 0) - currentMembers;
     if (availableSpots > 0) {
       score += 10;
     }
 
     // Team activity (10% weight)
-    if (team.totalEarnings > 0 || team.averageRating > 0) {
+    if ((team?.totalEarnings || 0) > 0 || (team?.averageRating || 0) > 0) {
       score += 10;
     }
 
@@ -204,7 +204,7 @@ export default function TeamsPage() {
 
   // Apply filters and search
   useEffect(() => {
-    let filtered = teams;
+    let filtered = Array.isArray(teams) ? teams : [];
 
     // Search filter
     if (searchTerm) {
@@ -272,16 +272,16 @@ export default function TeamsPage() {
 
   // Get recommended teams
   const getRecommendedTeams = () => {
-    if (!userProfile) return [];
-    
-    return filteredTeams
+    if (!userProfile) return [] as any[];
+    const base = Array.isArray(filteredTeams) ? filteredTeams : [];
+    return base
       .filter(team => team.status === 'OPEN')
       .map(team => ({
         ...team,
         matchScore: calculateMatchScore(team)
       }))
-      .filter(team => team.matchScore > 30) // Only show teams with >30% match
-      .sort((a, b) => b.matchScore - a.matchScore)
+      .filter(team => (team as any).matchScore > 30)
+      .sort((a: any, b: any) => (b as any).matchScore - (a as any).matchScore)
       .slice(0, 3);
   };
 

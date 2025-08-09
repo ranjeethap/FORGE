@@ -130,39 +130,39 @@ export default function ProjectsPage() {
 
     let score = 0;
     const userSkills = [
-      ...userProfile.skills.map(s => s.name.toLowerCase()),
-      ...userProfile.customSkills.map(s => s.toLowerCase())
+      ...((userProfile?.skills || []).map(s => (s?.name || '').toLowerCase())),
+      ...((userProfile?.customSkills || []).map(s => (s || '').toLowerCase()))
     ];
-    const projectSkills = project.skills.map(s => s.name.toLowerCase());
+    const projectSkills = (project?.skills || []).map(s => (s?.name || '').toLowerCase());
 
     // Skill match (50% weight)
     const skillMatches = projectSkills.filter(skill => 
       userSkills.some(userSkill => 
-        userSkill.includes(skill) || skill.includes(userSkill)
+        userSkill && skill && (userSkill.includes(skill) || skill.includes(userSkill))
       )
     );
-    score += (skillMatches.length / projectSkills.length) * 50;
+    score += projectSkills.length > 0 ? (skillMatches.length / projectSkills.length) * 50 : 0;
 
     // Hourly rate compatibility (30% weight)
-    if (userProfile.hourlyRate && project.hourlyRate) {
+    if (userProfile?.hourlyRate && project?.hourlyRate) {
       const rateDiff = Math.abs(userProfile.hourlyRate - project.hourlyRate);
       const rateScore = Math.max(0, 30 - (rateDiff / 10));
       score += rateScore;
     }
 
     // Project complexity (10% weight)
-    if (project.estimatedHours && project.estimatedHours > 0) {
+    if (project?.estimatedHours && project.estimatedHours > 0) {
       if (project.estimatedHours <= 40) {
-        score += 10; // Small project
+        score += 10;
       } else if (project.estimatedHours <= 160) {
-        score += 8; // Medium project
+        score += 8;
       } else {
-        score += 5; // Large project
+        score += 5;
       }
     }
 
     // Budget availability (10% weight)
-    if (project.budget && project.budget > 0) {
+    if (project?.budget && project.budget > 0) {
       score += 10;
     }
 
@@ -171,7 +171,7 @@ export default function ProjectsPage() {
 
   // Apply filters and search
   useEffect(() => {
-    let filtered = projects;
+    let filtered = Array.isArray(projects) ? projects : [];
 
     // Search filter
     if (searchTerm) {
@@ -235,16 +235,16 @@ export default function ProjectsPage() {
 
   // Get recommended projects
   const getRecommendedProjects = () => {
-    if (!userProfile) return [];
-    
-    return filteredProjects
+    if (!userProfile) return [] as any[];
+    const base = Array.isArray(filteredProjects) ? filteredProjects : [];
+    return base
       .filter(project => project.status === 'OPEN')
       .map(project => ({
         ...project,
         matchScore: calculateMatchScore(project)
       }))
-      .filter(project => project.matchScore > 30) // Only show projects with >30% match
-      .sort((a, b) => b.matchScore - a.matchScore)
+      .filter(project => (project as any).matchScore > 30)
+      .sort((a: any, b: any) => (b as any).matchScore - (a as any).matchScore)
       .slice(0, 3);
   };
 
