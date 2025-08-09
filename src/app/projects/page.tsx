@@ -1,6 +1,5 @@
 'use client';
 
-import { useUser } from "@clerk/nextjs";
 import { useState, useEffect } from "react";
 
 interface Project {
@@ -56,7 +55,6 @@ interface UserProfile {
 }
 
 export default function ProjectsPage() {
-  const { user } = useUser();
   const [projects, setProjects] = useState<Project[]>([]);
   const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,13 +77,12 @@ export default function ProjectsPage() {
   // Fetch projects and user profile
   useEffect(() => {
     const fetchData = async () => {
-      if (!user) return;
-
       try {
         setLoading(true);
+        const email = localStorage.getItem('userEmail') || 'demo@example.com';
         const [projectsResponse, profileResponse, skillsResponse] = await Promise.all([
           fetch('/api/projects'),
-          fetch(`/api/users/profile?email=${user.emailAddresses[0]?.emailAddress}`),
+          fetch(`/api/users/profile?email=${email}`),
           fetch('/api/skills')
         ]);
 
@@ -112,7 +109,7 @@ export default function ProjectsPage() {
     };
 
     fetchData();
-  }, [user]);
+  }, []);
 
   // Calculate match score for a project based on user profile
   const calculateMatchScore = (project: Project): number => {
@@ -239,23 +236,6 @@ export default function ProjectsPage() {
   };
 
   const recommendedProjects = getRecommendedProjects();
-
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Sign in required</h1>
-          <p className="text-gray-600 mb-6">You must be signed in to browse projects</p>
-          <a
-            href="/"
-            className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
-          >
-            Go to Home
-          </a>
-        </div>
-      </div>
-    );
-  }
 
   if (loading) {
     return (

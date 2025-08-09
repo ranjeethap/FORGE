@@ -555,6 +555,33 @@ export default function AnalyticsDashboard({
         </div>
       ) : (!capabilities.features.collaborationMetrics && <DisabledCard title="Collaboration Metrics" />)}
 
+      {/* Activity Timeline */}
+      {analytics.activityTimeline && analytics.activityTimeline.length > 0 && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Activity Timeline</h3>
+          <div className="space-y-4">
+            {analytics.activityTimeline.slice(0, 10).map((activity: any, idx: number) => (
+              <div key={activity.id || idx} className="flex items-center space-x-3">
+                <div className="flex-shrink-0">
+                  <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900">{activity.title}</p>
+                  <p className="text-sm text-gray-500">
+                    {activity.leader?.firstName || activity.leader?.email} • {new Date(activity.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <div className="flex-shrink-0">
+                  <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(activity.status || 'UNKNOWN')}`}>
+                    {(activity.status || 'UNKNOWN').replace('_', ' ')}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Admin-only System Health */}
       {role === 'ADMIN' && (
         <div className="bg-white rounded-lg shadow p-6">
