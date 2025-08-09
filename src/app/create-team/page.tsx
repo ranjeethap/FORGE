@@ -119,6 +119,32 @@ export default function CreateTeamPage() {
         throw new Error(data.error || 'Failed to create team');
       }
 
+      try {
+        const createdTeams = JSON.parse(localStorage.getItem('createdTeams') || '[]');
+        const newTeam = {
+          id: data.id || String(Date.now()),
+          name: data.name,
+          description: data.description,
+          status: 'OPEN',
+          hourlyRate: data.hourlyRate,
+          maxMembers: data.maxMembers || parseInt(formData.maxMembers),
+          location: formData.location || null,
+          timezone: formData.timezone || null,
+          communication: formData.communication,
+          totalEarnings: 0,
+          averageRating: 0,
+          createdAt: new Date().toISOString(),
+          leader: {
+            firstName: localStorage.getItem('userFirstName') || 'You',
+            lastName: localStorage.getItem('userLastName') || '',
+            email: localStorage.getItem('userEmail') || 'demo@example.com',
+          },
+          members: [],
+          skills: (formData.skills || []).map(id => ({ id, name: availableSkills.find(s => s.id === id)?.name || 'Skill', category: null }))
+        };
+        localStorage.setItem('createdTeams', JSON.stringify([newTeam, ...createdTeams]));
+      } catch {}
+
       // Redirect to the new team page
       router.push(`/teams/${data.id}`);
     } catch (error) {

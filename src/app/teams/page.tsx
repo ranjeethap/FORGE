@@ -108,15 +108,22 @@ export default function TeamsPage() {
         ]);
 
         if (teamsResponse.ok) {
-          const teamsData = await teamsResponse.json();
-          // Ensure teamsData is an array
-          const teamsArray = Array.isArray(teamsData) ? teamsData : [];
-          setTeams(teamsArray);
-          setFilteredTeams(teamsArray);
+          const data = await teamsResponse.json();
+          const apiTeams: Team[] = Array.isArray(data) ? data : (Array.isArray(data?.teams) ? data.teams : []);
+          // Merge locally created teams (persisted to localStorage after creation)
+          const localCreated: Team[] = (() => {
+            try { return JSON.parse(localStorage.getItem('createdTeams') || '[]'); } catch { return []; }
+          })();
+          const merged = [...localCreated, ...apiTeams];
+          setTeams(merged);
+          setFilteredTeams(merged);
         } else {
           console.error('Failed to fetch teams:', teamsResponse.status);
-          setTeams([]);
-          setFilteredTeams([]);
+          const localCreated: Team[] = (() => {
+            try { return JSON.parse(localStorage.getItem('createdTeams') || '[]'); } catch { return []; }
+          })();
+          setTeams(localCreated);
+          setFilteredTeams(localCreated);
         }
 
         if (profileResponse.ok) {
@@ -130,6 +137,11 @@ export default function TeamsPage() {
         }
       } catch (error) {
         console.error('Error fetching teams data:', error);
+        const localCreated: Team[] = (() => {
+          try { return JSON.parse(localStorage.getItem('createdTeams') || '[]'); } catch { return []; }
+        })();
+        setTeams(localCreated);
+        setFilteredTeams(localCreated);
       } finally {
         setLoading(false);
       }
