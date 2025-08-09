@@ -151,6 +151,9 @@ export async function POST(request: NextRequest) {
         email: 'john.doe@example.com',
         avatar: 'JD'
       },
+      location: null,
+      timezone: null,
+      communication: [],
       createdAt: new Date(),
       updatedAt: new Date()
     };

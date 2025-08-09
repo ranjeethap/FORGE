@@ -145,8 +145,8 @@ export default function CreateTeamPage() {
         localStorage.setItem('createdTeams', JSON.stringify([newTeam, ...createdTeams]));
       } catch {}
 
-      // Redirect to the new team page
-      router.push(`/teams/${data.id}`);
+      // Redirect to the teams list so the user sees their new team
+      router.push(`/teams`);
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to create team');
     } finally {
