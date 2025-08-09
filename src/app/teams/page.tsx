@@ -374,7 +374,7 @@ export default function TeamsPage() {
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-lg font-semibold text-green-600">${team.hourlyRate}/hr</span>
                     <span className="text-sm text-gray-500">
-                      {team.members.length}/{team.maxMembers} members
+                      {(team.members?.length ?? 0)}/{team.maxMembers} members
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-1 mb-4">
@@ -557,7 +557,7 @@ export default function TeamsPage() {
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-lg font-semibold text-green-600">${team.hourlyRate}/hr</span>
                   <span className="text-sm text-gray-500">
-                    {team.members.length}/{team.maxMembers} members
+                    {(team.members?.length ?? 0)}/{team.maxMembers} members
                   </span>
                 </div>
 
