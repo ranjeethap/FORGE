@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 
 interface Project {
   id: string;
@@ -65,24 +66,36 @@ interface Project {
   }>;
 }
 
-export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function ProjectDetailPage() {
+  const params = useParams();
+  const id = (params?.id as string) || '';
   const [activeTab, setActiveTab] = useState('overview');
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
+    setIsLoggedIn(!!localStorage.getItem('userEmail'));
     const fetchProject = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/projects/${id}`);
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch project');
+        let data: Project | null = null;
+
+        // Local first for just-created projects
+        try {
+          const createdProjects = JSON.parse(localStorage.getItem('createdProjects') || '[]');
+          const local = createdProjects.find((p: any) => String(p.id) === String(id));
+          if (local) data = local as Project;
+        } catch {}
+
+        // API fallback
+        if (!data && id) {
+          const response = await fetch(`/api/projects/${id}`);
+          if (response.ok) data = await response.json();
         }
-        
-        const data = await response.json();
+
+        if (!data) throw new Error('Failed to fetch project');
         setProject(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch project');
@@ -91,7 +104,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       }
     };
 
-    fetchProject();
+    if (id) fetchProject();
+    else setError('Invalid project id');
   }, [id]);
 
   if (loading) {
@@ -121,6 +135,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     );
   }
 
+  const backHref = isLoggedIn ? '/dashboard' : '/';
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -133,10 +149,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             </div>
             <div className="flex items-center space-x-4">
               <a
-                href="/"
+                href={backHref}
                 className="text-blue-600 hover:text-blue-800 font-semibold"
               >
-                ← Back to Landing
+                ← Back to {isLoggedIn ? 'Dashboard' : 'Landing'}
               </a>
             </div>
           </div>
@@ -266,15 +282,24 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 <h2 className="text-lg font-medium text-gray-900 mb-4">Project Actions</h2>
                 
                 <div className="space-y-3">
-                  <p className="text-gray-500 text-center">
-                    Sign up to apply for this project
-                  </p>
-                  <a
-                    href="/sign-up"
-                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors text-center block"
-                  >
-                    Sign Up to Apply
-                  </a>
+                  {isLoggedIn ? (
+                    <a
+                      href="/dashboard"
+                      className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors text-center block"
+                    >
+                      Go to Dashboard
+                    </a>
+                  ) : (
+                    <>
+                      <p className="text-gray-500 text-center">Sign up to apply for this project</p>
+                      <a
+                        href="/sign-up"
+                        className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors text-center block"
+                      >
+                        Sign Up to Apply
+                      </a>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

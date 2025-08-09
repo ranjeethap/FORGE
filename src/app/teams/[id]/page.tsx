@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 
 interface Team {
   id: string;
@@ -61,24 +62,62 @@ interface Team {
   }>;
 }
 
-export default function TeamDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function TeamDetailPage() {
+  const params = useParams();
+  const id = (params?.id as string) || '';
   const [activeTab, setActiveTab] = useState('overview');
   const [team, setTeam] = useState<Team | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
+    setIsLoggedIn(!!localStorage.getItem('userEmail'));
     const fetchTeam = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/teams/${id}`);
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch team');
+        let data: Team | null = null;
+
+        // 1) Try local first for just-created teams
+        try {
+          const createdTeams = JSON.parse(localStorage.getItem('createdTeams') || '[]');
+          const local = createdTeams.find((t: any) => String(t.id) === String(id));
+          if (local) {
+            data = {
+              id: String(local.id),
+              name: local.name,
+              description: local.description || '',
+              hourlyRate: local.hourlyRate || 0,
+              maxMembers: local.maxMembers || 5,
+              status: 'OPEN',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              leader: {
+                id: 'me',
+                firstName: localStorage.getItem('userFirstName') || 'You',
+                lastName: localStorage.getItem('userLastName') || '',
+                email: localStorage.getItem('userEmail') || 'demo@example.com',
+                bio: null,
+                location: local.location || null,
+                timezone: local.timezone || null,
+                hourlyRate: local.hourlyRate || null,
+              },
+              members: [],
+              projects: [],
+              skills: local.skills || [],
+            } as Team;
+          }
+        } catch {}
+
+        // 2) If not found locally, hit API
+        if (!data && id) {
+          const response = await fetch(`/api/teams/${id}`);
+          if (response.ok) {
+            data = await response.json();
+          }
         }
-        
-        const data = await response.json();
+
+        if (!data) throw new Error('Failed to fetch team');
         setTeam(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch team');
@@ -87,7 +126,8 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
       }
     };
 
-    fetchTeam();
+    if (id) fetchTeam();
+    else setError('Invalid team id');
   }, [id]);
 
   if (loading) {
@@ -117,6 +157,8 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
     );
   }
 
+  const backHref = isLoggedIn ? '/dashboard' : '/';
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -129,10 +171,10 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
             </div>
             <div className="flex items-center space-x-4">
               <a
-                href="/"
+                href={backHref}
                 className="text-blue-600 hover:text-blue-800 font-semibold"
               >
-                ← Back to Landing
+                ← Back to {isLoggedIn ? 'Dashboard' : 'Landing'}
               </a>
             </div>
           </div>
@@ -209,7 +251,6 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
             <div className="md:col-span-2">
               <div className="bg-white shadow rounded-lg p-6">
                 <h2 className="text-lg font-medium text-gray-900 mb-4">Team Information</h2>
-                
                 <div className="space-y-4">
                   <div>
                     <h3 className="text-sm font-medium text-gray-700">Description</h3>
@@ -259,17 +300,25 @@ export default function TeamDetailPage({ params }: { params: Promise<{ id: strin
             <div className="md:col-span-1">
               <div className="bg-white shadow rounded-lg p-6">
                 <h2 className="text-lg font-medium text-gray-900 mb-4">Team Actions</h2>
-                
                 <div className="space-y-3">
-                  <p className="text-gray-500 text-center">
-                    Sign up to apply for this team
-                  </p>
-                  <a
-                    href="/sign-up"
-                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors text-center block"
-                  >
-                    Sign Up to Apply
-                  </a>
+                  {isLoggedIn ? (
+                    <a
+                      href="/dashboard"
+                      className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors text-center block"
+                    >
+                      Go to Dashboard
+                    </a>
+                  ) : (
+                    <>
+                      <p className="text-gray-500 text-center">Sign up to apply for this team</p>
+                      <a
+                        href="/sign-up"
+                        className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors text-center block"
+                      >
+                        Sign Up to Apply
+                      </a>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
