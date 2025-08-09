@@ -116,8 +116,9 @@ export default function CreateProjectPage() {
 
       // Persist locally for mock flow
       const createdProjects = JSON.parse(localStorage.getItem('createdProjects') || '[]');
+      const newId = String(Date.now());
       const newProject = {
-        id: String(Date.now()),
+        id: newId,
         title: formData.title.trim(),
         description: formData.description.trim(),
         requirements: formData.requirements.trim() || '',
@@ -140,7 +141,7 @@ export default function CreateProjectPage() {
       localStorage.setItem('createdProjects', JSON.stringify([newProject, ...createdProjects]));
 
       // Redirect to projects list (the new project will appear there)
-      router.push('/projects');
+      router.push(`/projects/${newId}`);
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to create project');
     } finally {

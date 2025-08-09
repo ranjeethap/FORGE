@@ -119,10 +119,11 @@ export default function CreateTeamPage() {
         throw new Error(data.error || 'Failed to create team');
       }
 
+      const generatedId = data.id || String(Date.now());
       try {
         const createdTeams = JSON.parse(localStorage.getItem('createdTeams') || '[]');
         const newTeam = {
-          id: data.id || String(Date.now()),
+          id: generatedId,
           name: data.name,
           description: data.description,
           status: 'OPEN',
@@ -146,7 +147,7 @@ export default function CreateTeamPage() {
       } catch {}
 
       // Redirect to the teams list so the user sees their new team
-      router.push(`/teams`);
+      router.push(`/teams/${generatedId}`);
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to create team');
     } finally {
