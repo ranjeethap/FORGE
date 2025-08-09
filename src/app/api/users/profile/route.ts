@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
           hourlyRate: 85,
           isAvailable: true,
           subscriptionTier: 'ENTERPRISE',
-          subscriptionStatus: trial ? 'TRIALING' : 'ACTIVE',
+          subscriptionStatus: 'ACTIVE',
           billingCycle,
         };
       } else {

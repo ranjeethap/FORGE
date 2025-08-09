@@ -308,7 +308,7 @@ export default function AnalyticsDashboard({
   return (
     <div className="space-y-6">
       {/* Trial banner */}
-      {trialing && (
+      {trialing && role !== 'ADMIN' && tier !== 'ENTERPRISE' && (
         <div className="bg-orange-50 border border-orange-200 text-orange-800 rounded-lg p-3 text-sm">
           You are on a 14-day trial. Some analytics are read-only. <a href="/pricing" className="underline">Upgrade</a> to keep full access.
         </div>
