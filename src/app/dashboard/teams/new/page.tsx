@@ -15,23 +15,44 @@ export default function NewTeamPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const form = e.target as any;
+      const payload = {
+        name: form.teamName.value,
+        description: form.description.value,
+        type: form.teamType.value,
+        hourlyRate: parseInt(form.hourlyRate.value, 10),
+      };
+
       const response = await fetch('/api/teams/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          // Get form data and send it
-          name: (e.target as any).teamName.value,
-          description: (e.target as any).description.value,
-          type: (e.target as any).teamType.value,
-          hourlyRate: parseInt((e.target as any).hourlyRate.value),
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
         throw new Error('Failed to create team');
       }
+
+      const data = await response.json();
+      const newId = data?.id || String(Date.now());
+
+      // Save a dashboard-shaped team locally so it appears in My Teams immediately
+      try {
+        const existing = JSON.parse(localStorage.getItem('dashboardTeams') || '[]');
+        const newDashTeam = {
+          id: newId,
+          name: payload.name,
+          role: 'Team Lead',
+          status: 'active',
+          members: [],
+          activeProjects: 0,
+          completedProjects: 0,
+          hourlyRate: payload.hourlyRate,
+        };
+        localStorage.setItem('dashboardTeams', JSON.stringify([newDashTeam, ...existing]));
+      } catch {}
 
       router.push('/dashboard/teams');
     } catch (error) {

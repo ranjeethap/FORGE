@@ -43,8 +43,19 @@ export default function MyTeamsPage() {
     }
   ];
 
+  // Merge local newly created dashboard teams
+  let mergedTeams = allTeams;
+  if (typeof window !== 'undefined') {
+    try {
+      const local = JSON.parse(localStorage.getItem('dashboardTeams') || '[]');
+      if (Array.isArray(local) && local.length) {
+        mergedTeams = [...local, ...allTeams];
+      }
+    } catch {}
+  }
+
   // Filter and search logic
-  const filteredTeams = allTeams.filter(team => {
+  const filteredTeams = mergedTeams.filter(team => {
     const matchesSearch = team.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesRole = !roleFilter || team.role.toLowerCase() === roleFilter.toLowerCase();
     return matchesSearch && matchesRole;
